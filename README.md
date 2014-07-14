@@ -1,0 +1,4 @@
+pointsel
+========
+
+Graphics point selector.
