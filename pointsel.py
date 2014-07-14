@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright 2014 by Paweł T. Jochym <pawel.jochym@ifj.edu.pl>
+# This code is licensed under GPL v2 or later.
+# The oryginal repo is at: https://github.com/jochym/pointsel
+#
 
 from __future__ import division
 from numpy import array
