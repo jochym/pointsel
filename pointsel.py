@@ -50,7 +50,8 @@ class CanvasFrame(wx.Frame):
         except IOError :
             print('Warning: Cannot open file ', self.datfn)
             self.dat=[['',''],array([[],[]])]
-
+            
+        self.axes.set_title('File: %s' % self.datfn)
         self.displayData(self.dat[1],self.dat[0])
 
         self.canvas = FigureCanvas(self, -1, self.figure)
