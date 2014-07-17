@@ -17,7 +17,7 @@ matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import _load_bitmap
-from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
+from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 from matplotlib.figure import Figure
 
@@ -26,12 +26,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
-class CustomToolbar(NavigationToolbar2WxAgg): 
+class CustomToolbar(NavigationToolbar2Wx): 
     ON_CUSTOM_SELECT  = wx.NewId()
 
     def __init__(self, plotCanvas):
         # create the default toolbar
-        NavigationToolbar2WxAgg.__init__(self, plotCanvas)
+        NavigationToolbar2Wx.__init__(self, plotCanvas)
         # add new toolbar buttons 
         self.AddCheckTool(self.ON_CUSTOM_SELECT, 
                 wx.Bitmap('selection.png'),
@@ -124,7 +124,7 @@ class CanvasFrame(wx.Frame):
             # back, but at the expense of having the toolbar at the top
             print('MacOS hack for toolbar')
             self.SetToolBar(self.toolbar)
-        else:
+        if True:
             # On Windows platform, default window size is incorrect, so set
             # toolbar width to figure width.
             tw, th = self.toolbar.GetSizeTuple()
