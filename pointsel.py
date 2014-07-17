@@ -140,7 +140,8 @@ class CanvasFrame(wx.Frame):
         self.add_toolbar()  # comment this out for no toolbar
 
     def add_toolbar(self):
-        self.toolbar = CustomToolbar(self.canvas)
+#        self.toolbar = CustomToolbar(self.canvas)
+        self.toolbar = NavigationToolbar2Wx(self.canvas)
         self.toolbar.Realize()
         if wx.Platform == '__WXMAC__':
             # Mac platform (OSX 10.3, MacPython) does not seem to cope with
