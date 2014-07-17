@@ -16,7 +16,7 @@ wxversion.ensureMinimal('2.8')
 matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import _load_bitmap
+from matplotlib.backends.backend_wx import _load_bitmap, bind
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 from matplotlib.figure import Figure
@@ -27,26 +27,51 @@ import matplotlib.pyplot as plt
 
 
 class CustomToolbar(NavigationToolbar2Wx): 
-    ON_CUSTOM_SELECT  = wx.NewId()
+    
+    toolitems=NavigationToolbar2Wx.toolitems + (
+        (None, None, None, None),
+        ('ROI', 'Select ROI', 'selection', '_on_custom_select'),
+    )
 
     def __init__(self, plotCanvas):
         # create the default toolbar
         NavigationToolbar2Wx.__init__(self, plotCanvas)
-        # add new toolbar buttons 
-        self.AddCheckTool(self.ON_CUSTOM_SELECT, 
-                wx.Bitmap('selection.png'),
-                shortHelp='ROI', longHelp='Select ROI')
-        wx.EVT_TOOL(self, self.ON_CUSTOM_SELECT, self._on_custom_select)
+
+    def _init_toolbar(self):
+        print("_init_toolbar", 1, self)
+
+        self._parent = self.canvas.GetParent()
+
+        self.wx_ids = {}
+        for text, tooltip_text, image_file, callback in self.toolitems:
+            if text is None:
+                self.AddSeparator()
+                continue
+            self.wx_ids[text] = wx.NewId()
+            try :
+                bitmap=_load_bitmap(image_file + '.png')
+            except IOError :
+                bitmap=wx.Bitmap(image_file + '.png')
+            if text in ['Pan', 'Zoom', 'ROI']:
+               self.AddCheckTool(self.wx_ids[text], bitmap,
+                                 shortHelp=text, longHelp=tooltip_text)
+            else:
+               self.AddSimpleTool(self.wx_ids[text], bitmap,
+                                  text, tooltip_text)
+            bind(self, wx.EVT_TOOL, getattr(self, callback), id=self.wx_ids[text])
+
+        self.Realize()
+
 
     # Turn on selection
     def _on_custom_select(self, evt):
         for id in ['Zoom','Pan']:
             self.ToggleTool(self.wx_ids[id], False)
 
-        print('Select ROI: %s' % (self.GetToolState(self.ON_CUSTOM_SELECT)))
-        self.ToggleTool(self.ON_CUSTOM_SELECT, 
-                self.GetToolState(self.ON_CUSTOM_SELECT) )
-        print('Select ROI: %s' % (self.GetToolState(self.ON_CUSTOM_SELECT)))
+        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
+        self.ToggleTool(self.wx_ids['ROI'], 
+                self.GetToolState(self.wx_ids['ROI']) )
+        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
 
 
 class CanvasFrame(wx.Frame):
@@ -117,14 +142,13 @@ class CanvasFrame(wx.Frame):
     def add_toolbar(self):
         self.toolbar = CustomToolbar(self.canvas)
         self.toolbar.Realize()
-        print('Platform:', wx.Platform)
         if wx.Platform == '__WXMAC__':
             # Mac platform (OSX 10.3, MacPython) does not seem to cope with
             # having a toolbar in a sizer. This work-around gets the buttons
             # back, but at the expense of having the toolbar at the top
             print('MacOS hack for toolbar')
             self.SetToolBar(self.toolbar)
-        if True:
+        else:
             # On Windows platform, default window size is incorrect, so set
             # toolbar width to figure width.
             tw, th = self.toolbar.GetSizeTuple()
@@ -135,7 +159,6 @@ class CanvasFrame(wx.Frame):
             self.toolbar.SetSize(wx.Size(fw, th))
             self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
         # update the axes menu on the toolbar
-        self.toolbar.Realize()
         self.toolbar.update()
 
 
