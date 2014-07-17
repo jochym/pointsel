@@ -9,7 +9,7 @@
 from __future__ import division, print_function
 from numpy import array
 import numpy as np
-import sys
+import sys, os
 import matplotlib
 import wxversion
 wxversion.ensureMinimal('2.8')
@@ -34,7 +34,30 @@ class CanvasFrame(wx.Frame):
         wx.Frame.__init__(self,None,-1,
                          'CanvasFrame',size=(800,600))
 
+        self.dirname=''
+        self.filename=''
         self.SetBackgroundColour(wx.NamedColour("WHITE"))
+
+        # Setting up the menu.
+        filemenu= wx.Menu()
+        menuOpen = filemenu.Append(wx.ID_OPEN, 
+                    "&Open"," Open a file to edit")
+        menuAbout= filemenu.Append(wx.ID_ABOUT, 
+                    "&About"," Information about this program")
+        menuExit = filemenu.Append(wx.ID_EXIT,
+                    "E&xit"," Terminate the program")
+
+        # Creating the menubar.
+        menuBar = wx.MenuBar()
+        menuBar.Append(filemenu,"&File") 
+
+        # Adding the "filemenu" to the MenuBar
+        self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
+
+        # Events.
+        self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
+        self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
+        self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -50,11 +73,15 @@ class CanvasFrame(wx.Frame):
         except IOError :
             print('Warning: Cannot open file ', self.datfn)
             self.dat=[['',''],array([[],[]])]
-            
+        
+        self.dirname, self.filename= os.path.split(self.datfn)
+
+        self.plot,=self.axes.plot([],[],',')
         self.axes.set_title('File: %s' % self.datfn)
         self.displayData(self.dat[1],self.dat[0])
 
         self.canvas = FigureCanvas(self, -1, self.figure)
+        self.redrawPlot()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
@@ -91,10 +118,19 @@ class CanvasFrame(wx.Frame):
         The axes are lebeled with labels from the lbl parameter.
         The lbl must contain a list of labels for columns.
         '''
-        self.axes.plot(dat[cols[0]],dat[cols[1]],',')
+        self.axes.set_autoscale_on(True)
+        self.plot.set_data([],[])
+        self.plot.set_data(dat[cols[0]],dat[cols[1]])
+        self.plot.set_label(self.filename)
         if lbl :
             self.axes.set_xlabel(lbl[cols[0]])
             self.axes.set_ylabel(lbl[cols[1]])
+        self.axes.legend((self.filename,))
+
+    def redrawPlot(self):
+        self.axes.relim()
+        self.axes.autoscale_view(True,True,True)
+        self.figure.canvas.draw()
 
     def add_toolbar(self):
         self.toolbar = NavigationToolbar2Wx(self.canvas)
@@ -117,6 +153,27 @@ class CanvasFrame(wx.Frame):
         # update the axes menu on the toolbar
         self.toolbar.update()
 
+    def OnAbout(self,e):
+        # Create a message dialog box
+        dlg = wx.MessageDialog(self, "A data point selector", "About PointSel", wx.OK)
+        dlg.ShowModal() # Shows it
+        dlg.Destroy() # finally destroy it when finished.
+
+    def OnExit(self,e):
+        self.Close(True)  # Close the frame.
+
+    def OnOpen(self,e):
+        """ Open a file"""
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.filename = dlg.GetFilename()
+            self.dirname = dlg.GetDirectory()
+            self.datfn=os.path.join(self.dirname, self.filename)
+            self.dat=self.readData(self.datfn)
+            self.displayData(self.dat[1],self.dat[0])
+            self.axes.set_title(self.filename)
+            self.redrawPlot()
+        dlg.Destroy()
 
     def OnPaint(self, event):
         self.canvas.draw()
@@ -137,6 +194,6 @@ class App(wx.App):
 if __name__ == '__main__':
 
 
-    app = App(0)
+    app = App(False)
     app.MainLoop()
 
