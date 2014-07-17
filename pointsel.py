@@ -17,7 +17,7 @@ matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import _load_bitmap
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from matplotlib.figure import Figure
 
@@ -26,12 +26,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
-class CustomToolbar(NavigationToolbar2Wx): 
+class CustomToolbar(NavigationToolbar2WxAgg): 
     ON_CUSTOM_SELECT  = wx.NewId()
 
     def __init__(self, plotCanvas):
         # create the default toolbar
-        NavigationToolbar2Wx.__init__(self, plotCanvas)
+        NavigationToolbar2WxAgg.__init__(self, plotCanvas)
         # add new toolbar buttons 
         self.AddCheckTool(self.ON_CUSTOM_SELECT, 
                 wx.Bitmap('selection.png'),
@@ -135,6 +135,7 @@ class CanvasFrame(wx.Frame):
             self.toolbar.SetSize(wx.Size(fw, th))
             self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
         # update the axes menu on the toolbar
+        self.toolbar.Realize()
         self.toolbar.update()
 
 
