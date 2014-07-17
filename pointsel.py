@@ -16,6 +16,7 @@ wxversion.ensureMinimal('2.8')
 matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.backends.backend_wx import _load_bitmap
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 
 from matplotlib.figure import Figure
@@ -25,7 +26,27 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
+class CustomToolbar(NavigationToolbar2Wx): 
+    ON_CUSTOM_SELECT  = wx.NewId()
 
+    def __init__(self, plotCanvas):
+        # create the default toolbar
+        NavigationToolbar2Wx.__init__(self, plotCanvas)
+        # add new toolbar buttons 
+        self.AddCheckTool(self.ON_CUSTOM_SELECT, 
+                wx.Bitmap('selection.png'),
+                shortHelp='ROI', longHelp='Select ROI')
+        wx.EVT_TOOL(self, self.ON_CUSTOM_SELECT, self._on_custom_select)
+
+    # Turn on selection
+    def _on_custom_select(self, evt):
+        for id in ['Zoom','Pan']:
+            self.ToggleTool(self.wx_ids[id], False)
+
+        print('Select ROI: %s' % (self.GetToolState(self.ON_CUSTOM_SELECT)))
+        self.ToggleTool(self.ON_CUSTOM_SELECT, 
+                self.GetToolState(self.ON_CUSTOM_SELECT) )
+        print('Select ROI: %s' % (self.GetToolState(self.ON_CUSTOM_SELECT)))
 
 
 class CanvasFrame(wx.Frame):
@@ -41,7 +62,9 @@ class CanvasFrame(wx.Frame):
         # Setting up the menu.
         filemenu= wx.Menu()
         menuOpen = filemenu.Append(wx.ID_OPEN, 
-                    "&Open"," Open a file to edit")
+                    "&Open"," Open a data file")
+        menuSave = filemenu.Append(wx.ID_SAVE, 
+                    "&Save"," Open a file to save the selected data")
         menuAbout= filemenu.Append(wx.ID_ABOUT, 
                     "&About"," Information about this program")
         menuExit = filemenu.Append(wx.ID_EXIT,
@@ -56,6 +79,7 @@ class CanvasFrame(wx.Frame):
 
         # Events.
         self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
+        self.Bind(wx.EVT_MENU, self.OnSave, menuSave)
         self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
 
@@ -90,6 +114,30 @@ class CanvasFrame(wx.Frame):
 
         self.add_toolbar()  # comment this out for no toolbar
 
+    def add_toolbar(self):
+        self.toolbar = CustomToolbar(self.canvas)
+        self.toolbar.Realize()
+        print('Platform:', wx.Platform)
+        if wx.Platform == '__WXMAC__':
+            # Mac platform (OSX 10.3, MacPython) does not seem to cope with
+            # having a toolbar in a sizer. This work-around gets the buttons
+            # back, but at the expense of having the toolbar at the top
+            print('MacOS hack for toolbar')
+            self.SetToolBar(self.toolbar)
+        else:
+            # On Windows platform, default window size is incorrect, so set
+            # toolbar width to figure width.
+            tw, th = self.toolbar.GetSizeTuple()
+            fw, fh = self.canvas.GetSizeTuple()
+            # By adding toolbar in sizer, we are able to put it at the bottom
+            # of the frame - so appearance is closer to GTK version.
+            # As noted above, doesn't work for Mac.
+            self.toolbar.SetSize(wx.Size(fw, th))
+            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
+        # update the axes menu on the toolbar
+        self.toolbar.update()
+
+
     def readData(self, fn, skip=1):
         '''
         Read and translate the data from the file named fn.
@@ -119,39 +167,19 @@ class CanvasFrame(wx.Frame):
         The lbl must contain a list of labels for columns.
         '''
         self.axes.set_autoscale_on(True)
-        self.plot.set_data([],[])
+        #self.plot.set_data([],[])
         self.plot.set_data(dat[cols[0]],dat[cols[1]])
-        self.plot.set_label(self.filename)
+        #self.plot.set_label(self.filename)
         if lbl :
             self.axes.set_xlabel(lbl[cols[0]])
             self.axes.set_ylabel(lbl[cols[1]])
-        self.axes.legend((self.filename,))
+        #self.axes.legend((self.filename,))
 
     def redrawPlot(self):
         self.axes.relim()
         self.axes.autoscale_view(True,True,True)
         self.figure.canvas.draw()
 
-    def add_toolbar(self):
-        self.toolbar = NavigationToolbar2Wx(self.canvas)
-        self.toolbar.Realize()
-        if wx.Platform == '__WXMAC__':
-            # Mac platform (OSX 10.3, MacPython) does not seem to cope with
-            # having a toolbar in a sizer. This work-around gets the buttons
-            # back, but at the expense of having the toolbar at the top
-            self.SetToolBar(self.toolbar)
-        else:
-            # On Windows platform, default window size is incorrect, so set
-            # toolbar width to figure width.
-            tw, th = self.toolbar.GetSizeTuple()
-            fw, fh = self.canvas.GetSizeTuple()
-            # By adding toolbar in sizer, we are able to put it at the bottom
-            # of the frame - so appearance is closer to GTK version.
-            # As noted above, doesn't work for Mac.
-            self.toolbar.SetSize(wx.Size(fw, th))
-            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
-        # update the axes menu on the toolbar
-        self.toolbar.update()
 
     def OnAbout(self,e):
         # Create a message dialog box
@@ -178,7 +206,17 @@ class CanvasFrame(wx.Frame):
     def OnPaint(self, event):
         self.canvas.draw()
 
-
+    def OnSave(self, e):
+        '''Save the selected points'''
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.SAVE)
+        if dlg.ShowModal() == wx.ID_OK:
+            # The file name is local here.
+            # We are saving a selection not the data.
+            filename = dlg.GetFilename()
+            dirname = dlg.GetDirectory()
+            datfn=os.path.join(dirname, filename)
+            print('Will save into', datfn)
+        dlg.Destroy()
 
 
 class App(wx.App):
