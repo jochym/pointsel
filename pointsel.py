@@ -132,10 +132,14 @@ class CanvasFrame(wx.Frame):
         statbar = StatusBarWx(self)
         self.SetStatusBar(statbar)
         self.canvas = FigureCanvas(self, -1, self.figure)
-        self.redrawPlot()
+        self.canvas.SetInitialSize(wx.Size(self.figure.bbox.width, 
+                                            self.figure.bbox.height))
+        self.canvas.SetFocus()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+#        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
+
         self.toolbar=self._get_toolbar(statbar)
 
         if self.toolbar is not None:
@@ -161,11 +165,12 @@ class CanvasFrame(wx.Frame):
 
         self.SetSizer(self.sizer)
         self.Fit()
+        self.redrawPlot()
 
 
     def _get_toolbar(self, statbar):
-        toolbar = CustomToolbar(self.canvas)
-        #toolbar = NavigationToolbar2Wx(self.canvas)
+        #toolbar = CustomToolbar(self.canvas)
+        toolbar = NavigationToolbar2Wx(self.canvas)
         toolbar.set_status_bar(statbar)
         return toolbar
 
