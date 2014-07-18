@@ -16,8 +16,8 @@ wxversion.ensureMinimal('2.8')
 matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import _load_bitmap, bind
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx, StatusBarWx
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavToolbar
+from matplotlib.backends.backend_wx import _load_bitmap, bind, StatusBarWx
 
 from matplotlib.figure import Figure
 
@@ -26,16 +26,16 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
-class CustomToolbar(NavigationToolbar2Wx): 
+class CustomToolbar(NavToolbar): 
     
-    toolitems=NavigationToolbar2Wx.toolitems + (
+    toolitems=NavToolbar.toolitems + (
         (None, None, None, None),
         ('ROI', 'Select ROI', 'selection', '_on_custom_select'),
     )
 
     def __init__(self, plotCanvas):
         # create the default toolbar
-        NavigationToolbar2Wx.__init__(self, plotCanvas)
+        NavToolbar.__init__(self, plotCanvas)
 
     def _init_toolbar(self):
         self._parent = self.canvas.GetParent()
@@ -60,8 +60,13 @@ class CustomToolbar(NavigationToolbar2Wx):
 
         self.Realize()
 
+    def _update_view(self):
+        NavToolbar._update_view(self)
+        self.canvas.draw()
+
 
     # Turn on selection
+    # TODO: Proper handling of states, actual functionality.
     def _on_custom_select(self, evt):
         for id in ['Zoom','Pan']:
             self.ToggleTool(self.wx_ids[id], False)
