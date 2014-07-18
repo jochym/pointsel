@@ -150,7 +150,7 @@ class CanvasFrame(wx.Frame):
                 # back, but at the expense of having the toolbar at the top
                 print('MacOS hack for toolbar')
                 self.SetToolBar(self.toolbar)
-            else:
+            if True:
                 # On Windows platform, default window size is incorrect, so set
                 # toolbar width to figure width.
                 tw, th = self.toolbar.GetSizeTuple()
