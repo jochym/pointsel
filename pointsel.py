@@ -38,8 +38,6 @@ class CustomToolbar(NavigationToolbar2Wx):
         NavigationToolbar2Wx.__init__(self, plotCanvas)
 
     def _init_toolbar(self):
-        print("_init_toolbar", 1, self)
-
         self._parent = self.canvas.GetParent()
 
         self.wx_ids = {}
@@ -144,22 +142,14 @@ class CanvasFrame(wx.Frame):
 
         if self.toolbar is not None:
             self.toolbar.Realize()
-            if wx.Platform == '__WXMAC__':
-                # Mac platform (OSX 10.3, MacPython) does not seem to cope with
-                # having a toolbar in a sizer. This work-around gets the buttons
-                # back, but at the expense of having the toolbar at the top
-                print('MacOS hack for toolbar')
-                self.SetToolBar(self.toolbar)
-            if True:
-                # On Windows platform, default window size is incorrect, so set
-                # toolbar width to figure width.
-                tw, th = self.toolbar.GetSizeTuple()
-                fw, fh = self.canvas.GetSizeTuple()
-                # By adding toolbar in sizer, we are able to put it at the bottom
-                # of the frame - so appearance is closer to GTK version.
-                # As noted above, doesn't work for Mac.
-                self.toolbar.SetSize(wx.Size(fw, th))
-                self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
+            # Default window size is incorrect, so set
+            # toolbar width to figure width.
+            tw, th = self.toolbar.GetSizeTuple()
+            fw, fh = self.canvas.GetSizeTuple()
+            # By adding toolbar in sizer, we are able to put it at the bottom
+            # of the frame - so appearance is closer to GTK version.
+            self.toolbar.SetSize(wx.Size(fw, th))
+            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
             # update the axes menu on the toolbar
             self.toolbar.update()
 
@@ -169,8 +159,8 @@ class CanvasFrame(wx.Frame):
 
 
     def _get_toolbar(self, statbar):
-        #toolbar = CustomToolbar(self.canvas)
-        toolbar = NavigationToolbar2Wx(self.canvas)
+        toolbar = CustomToolbar(self.canvas)
+        #toolbar = NavigationToolbar2Wx(self.canvas)
         toolbar.set_status_bar(statbar)
         return toolbar
 
