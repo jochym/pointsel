@@ -17,7 +17,7 @@ matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import _load_bitmap, bind
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+from matplotlib.backends.backend_wx import NavigationToolbar2Wx, StatusBarWx
 
 from matplotlib.figure import Figure
 
@@ -78,7 +78,7 @@ class CanvasFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self,None,-1,
-                         'CanvasFrame',size=(800,600))
+                            'CanvasFrame', size=(800,600))
 
         self.dirname=''
         self.filename=''
@@ -129,39 +129,45 @@ class CanvasFrame(wx.Frame):
         self.axes.set_title('File: %s' % self.datfn)
         self.displayData(self.dat[1],self.dat[0])
 
+        statbar = StatusBarWx(self)
+        self.SetStatusBar(statbar)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.redrawPlot()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        self.toolbar=self._get_toolbar(statbar)
+
+        if self.toolbar is not None:
+            self.toolbar.Realize()
+            if wx.Platform == '__WXMAC__':
+                # Mac platform (OSX 10.3, MacPython) does not seem to cope with
+                # having a toolbar in a sizer. This work-around gets the buttons
+                # back, but at the expense of having the toolbar at the top
+                print('MacOS hack for toolbar')
+                self.SetToolBar(self.toolbar)
+            else:
+                # On Windows platform, default window size is incorrect, so set
+                # toolbar width to figure width.
+                tw, th = self.toolbar.GetSizeTuple()
+                fw, fh = self.canvas.GetSizeTuple()
+                # By adding toolbar in sizer, we are able to put it at the bottom
+                # of the frame - so appearance is closer to GTK version.
+                # As noted above, doesn't work for Mac.
+                self.toolbar.SetSize(wx.Size(fw, th))
+                self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
+            # update the axes menu on the toolbar
+            self.toolbar.update()
+
         self.SetSizer(self.sizer)
         self.Fit()
 
-        self.add_toolbar()  # comment this out for no toolbar
 
-    def add_toolbar(self):
-#        self.toolbar = CustomToolbar(self.canvas)
-        self.toolbar = NavigationToolbar2Wx(self.canvas)
-        self.toolbar.Realize()
-        if wx.Platform == '__WXMAC__':
-            # Mac platform (OSX 10.3, MacPython) does not seem to cope with
-            # having a toolbar in a sizer. This work-around gets the buttons
-            # back, but at the expense of having the toolbar at the top
-            print('MacOS hack for toolbar')
-            self.SetToolBar(self.toolbar)
-        else:
-            # On Windows platform, default window size is incorrect, so set
-            # toolbar width to figure width.
-            tw, th = self.toolbar.GetSizeTuple()
-            fw, fh = self.canvas.GetSizeTuple()
-            # By adding toolbar in sizer, we are able to put it at the bottom
-            # of the frame - so appearance is closer to GTK version.
-            # As noted above, doesn't work for Mac.
-            self.toolbar.SetSize(wx.Size(fw, th))
-            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
-        # update the axes menu on the toolbar
-        self.toolbar.update()
-
+    def _get_toolbar(self, statbar):
+        toolbar = CustomToolbar(self.canvas)
+        #toolbar = NavigationToolbar2Wx(self.canvas)
+        toolbar.set_status_bar(statbar)
+        return toolbar
 
     def readData(self, fn, skip=1):
         '''
