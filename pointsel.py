@@ -62,8 +62,15 @@ class CustomToolbar(NavToolbar):
 
     def _update_view(self):
         NavToolbar._update_view(self)
-        self.canvas.draw()
+        # MacOS needs a forced draw to update plot
+        if wx.Platform == '__WXMAC__':
+            self.canvas.draw()
 
+    def draw(self):
+        NavToolbar.draw(self)
+        # MacOS needs a forced draw to update plot
+        if wx.Platform == '__WXMAC__':
+            self.canvas.draw()
 
     # Turn on selection
     # TODO: Proper handling of states, actual functionality.
