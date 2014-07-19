@@ -21,6 +21,7 @@ from matplotlib.backends.backend_wx import _load_bitmap, bind, StatusBarWx
 
 from matplotlib.figure import Figure
 from matplotlib.widgets import RectangleSelector
+from matplotlib.patches import Rectangle
 
 import wx
 import matplotlib as mpl
@@ -42,6 +43,7 @@ class CustomToolbar(NavToolbar):
                              button=[1,3], # don't use middle button
                              minspanx=5, minspany=5)
         self.selector.set_active(False)
+        self.roi=None
 
     def _init_toolbar(self):
         self._parent = self.canvas.GetParent()
@@ -148,10 +150,26 @@ class CustomToolbar(NavToolbar):
         
 
     def onselect(self, eclick, erelease):
-      'eclick and erelease are matplotlib events at press and release'
-      print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
-      print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
-      print(' used button   : ', eclick.button)
+        'eclick and erelease are matplotlib events at press and release'
+        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
+        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
+        print(' used button   : ', eclick.button)
+        if self.roi :
+            self.roi.set_bounds(min(eclick.xdata,erelease.xdata),
+                                min(eclick.ydata,erelease.ydata),
+                                abs(eclick.xdata-erelease.xdata),
+                                abs(eclick.ydata-erelease.ydata))
+        else :
+            self.roi=Rectangle((min(eclick.xdata,erelease.xdata),
+                                min(eclick.ydata,erelease.ydata)),
+                                abs(eclick.xdata-erelease.xdata),
+                                abs(eclick.ydata-erelease.ydata),
+                                ls='solid', lw=2, color='r', fill=False, 
+                                zorder=5)
+            self.canvas.figure.axes[0].add_patch(self.roi)
+        self.draw()
+        print(self.roi.get_bbox())
+        
 
     def toggle_selector(self):
         if self.selector.active:
