@@ -27,6 +27,43 @@ import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+class RectSelector(RectangleSelector):
+
+    def __init__(self, ax, onselect, button=None,
+                 minspanx=None, minspany=None, useblit=True,
+                 lineprops=None, rectprops=None, proxy=5):
+        RectangleSelector.__init__(self, ax=ax, onselect=onselect, 
+                        drawtype='box', spancoords='data',
+                        minspanx=minspanx, minspany=minspany, 
+                        useblit=useblit, 
+                        lineprops=lineprops, rectprops=rectprops, 
+                        button=button)
+        self.mod=False
+        self.prevevents=None
+        self.proxy=proxy
+        print('Init')
+
+    def close_to_handles(self, ev):
+        return True
+    
+    def opposite_corner(self, ev):
+        return ev.xdata, ev.ydata
+        
+    def press(self, ev):
+        RectangleSelector.press(self,ev)
+        if self.mod and self.close_to_handles(ev):
+            x,y=self.opposite_corner(ev)
+            self.eventpress.xdata=x
+            self.eventpress.ydata=y
+        if self.prevevents :
+            print('Prev:', self.prevevents[0], self.prevevents[1])
+            self.eventpress=self.prevevents[1]
+        self.mod=True
+        
+    def release(self, ev):
+        self.prevevents=[self.eventpress,ev]
+        RectangleSelector.release(self, ev)
+
 
 class CustomToolbar(NavToolbar): 
     
@@ -38,9 +75,8 @@ class CustomToolbar(NavToolbar):
     def __init__(self, plotCanvas):
         # create the default toolbar
         NavToolbar.__init__(self, plotCanvas)
-        self.selector = RectangleSelector(self.canvas.figure.axes[0], self.onselect, 
-                             drawtype='box', useblit=True,
-                             button=[1,3], # don't use middle button
+        self.selector = RectSelector(self.canvas.figure.axes[0], 
+                            self.onselect, button=[1,3], # don't use middle button
                              minspanx=5, minspany=5)
         self.selector.set_active(False)
         self.roi=None
