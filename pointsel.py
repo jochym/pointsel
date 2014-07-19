@@ -31,7 +31,8 @@ class RectSelector(RectangleSelector):
 
     def __init__(self, ax, onselect, button=None,
                  minspanx=None, minspany=None, useblit=True,
-                 lineprops=None, rectprops=None, proxy=5):
+                 lineprops=None, rectprops=dict(facecolor='red', edgecolor = 'black',
+                           alpha=0.5, fill=True), proxy=5):
         RectangleSelector.__init__(self, ax=ax, onselect=onselect, 
                         drawtype='box', spancoords='data',
                         minspanx=minspanx, minspany=minspany, 
