@@ -20,6 +20,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavTool
 from matplotlib.backends.backend_wx import _load_bitmap, bind, StatusBarWx
 
 from matplotlib.figure import Figure
+from matplotlib.widgets import RectangleSelector
 
 import wx
 import matplotlib as mpl
@@ -36,6 +37,11 @@ class CustomToolbar(NavToolbar):
     def __init__(self, plotCanvas):
         # create the default toolbar
         NavToolbar.__init__(self, plotCanvas)
+        self.selector = RectangleSelector(self.canvas.figure.axes[0], self.onselect, 
+                             drawtype='box', useblit=True,
+                             button=[1,3], # don't use middle button
+                             minspanx=5, minspany=5)
+        self.selector.set_active(False)
 
     def _init_toolbar(self):
         self._parent = self.canvas.GetParent()
@@ -72,6 +78,62 @@ class CustomToolbar(NavToolbar):
         if wx.Platform == '__WXMAC__':
             self.canvas.draw()
 
+    def draw_rubberband(self, event, x0, y0, x1, y1):
+        # XOR does not work on MacOS ...
+        if wx.Platform != '__WXMAC__':
+            NavToolbar.draw_rubberband(self, event, x0, y0, x1, y1)
+        else :
+            print('MAC...')
+            'adapted from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/189744'
+            canvas = self.canvas
+            dc =wx.ClientDC(canvas)
+
+            # Set logical function to XOR for rubberbanding
+            dc.SetLogicalFunction(wx.XOR)
+
+            # Set dc brush and pen
+            # Here I set brush and pen to white and grey respectively
+            # You can set it to your own choices
+
+            # The brush setting is not really needed since we
+            # dont do any filling of the dc. It is set just for
+            # the sake of completion.
+
+            wbrush =wx.Brush(wx.Colour(255,255,255), wx.TRANSPARENT)
+            wpen =wx.Pen(wx.Colour(200, 200,200), 1, wx.SOLID)
+            dc.SetBrush(wbrush)
+            dc.SetPen(wpen)
+
+
+            dc.ResetBoundingBox()
+            dc.BeginDrawing()
+            height = self.canvas.figure.bbox.height
+            y1 = height - y1
+            y0 = height - y0
+
+            if y1<y0: y0, y1 = y1, y0
+            if x1<y0: x0, x1 = x1, x0
+
+            w = x1 - x0
+            h = y1 - y0
+
+            rect = int(x0), int(y0), int(w), int(h)
+                
+            try: 
+                lastrect = self.lastrect
+            except AttributeError: 
+                # Copy the picture into buffer
+                print('blit out')
+                self.background = self.canvas.copy_from_bbox(self.canvas.figure.bbox)
+            else: 
+                #erase last
+                print('blit in')
+                self.canvas.restore_region(self.background)
+            self.lastrect = rect
+            dc.DrawRectangle(*rect)
+            dc.EndDrawing()
+
+
     # Turn on selection
     # TODO: Proper handling of states, actual functionality.
     def _on_custom_select(self, evt):
@@ -81,7 +143,26 @@ class CustomToolbar(NavToolbar):
         print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
         self.ToggleTool(self.wx_ids['ROI'], 
                 self.GetToolState(self.wx_ids['ROI']) )
+        self.toggle_selector()
         print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
+        
+
+    def onselect(self, eclick, erelease):
+      'eclick and erelease are matplotlib events at press and release'
+      print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
+      print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
+      print(' used button   : ', eclick.button)
+
+    def toggle_selector(self):
+        if self.selector.active:
+            print(' RectangleSelector deactivated.')
+            self.selector.set_active(False)
+        else :
+            print(' RectangleSelector activated.')
+            self.selector.set_active(True)
+
+
+        
 
 
 class CanvasFrame(wx.Frame):
