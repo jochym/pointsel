@@ -216,7 +216,8 @@ class CustomToolbar(NavToolbar):
             print(' RectangleSelector activated.')
             self.selector.set_active(True)
 
-
+    def onFixedSize(self, ev):
+        print('Fixed:',ev.IsChecked())
         
 
 
@@ -257,18 +258,9 @@ class CanvasFrame(wx.Frame):
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
 
-        try :
-            self.datfn=sys.argv[1]
-        except IndexError :
-            # Example data
-            self.datfn='data/A339-SiC-560-1-SiC-WDS.txt'
-
-        try :
-            self.dat=self.readData(self.datfn)
-        except IOError :
-            print('Warning: Cannot open file ', self.datfn)
-            self.dat=[['',''],array([[],[]])]
         
+        self.datfn=''
+        self.dat=[['',''],array([[],[]])]
         self.dirname, self.filename= os.path.split(self.datfn)
 
         self.plot,=self.axes.plot([],[],',')
@@ -283,10 +275,28 @@ class CanvasFrame(wx.Frame):
         self.canvas.SetFocus()
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-#        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+        
+        # Build the parameters bar
+        self.parbarSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.fixedSizeCB = wx.CheckBox(self, style=wx.ALIGN_RIGHT)
+        self.parbarSizer.Add(wx.StaticText(self,label='Fixed size', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.fixedSizeCB,0, wx.CENTER | wx.LEFT)
+        self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=0.1)
+        self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=0.1)
+        self.parbarSizer.Add(wx.StaticText(self,label='  W x H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.widthCtrl, 0, wx.TOP | wx.LEFT)
+        self.parbarSizer.Add(wx.StaticText(self,label=' x ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
+        self.parbarSizer.Add(wx.StaticText(self,label=' um^2', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+
+        self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
+        
+        # Add plot canvas
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
 
+        # Add toolbar
         self.toolbar=self._get_toolbar(statbar)
+        self.fixedSizeCB.Bind(wx.EVT_CHECKBOX, self.toolbar.onFixedSize)
 
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -303,6 +313,21 @@ class CanvasFrame(wx.Frame):
 
         self.SetSizer(self.sizer)
         self.Fit()
+
+        # Read example data. To be removed in the future.
+        try :
+            self.datfn=sys.argv[1]
+        except IndexError :
+            # Example data
+            self.datfn='data/A339-SiC-560-1-SiC-WDS.txt'
+
+        try :
+            self.dat=self.readData(self.datfn)
+            self.displayData(self.dat[1],self.dat[0])
+            self.axes.set_title(self.filename)
+        except IOError :
+            print('Warning: Cannot open file ', self.datfn)
+
         self.redrawPlot()
 
 
@@ -329,10 +354,21 @@ class CanvasFrame(wx.Frame):
             lbl=df[0].strip().split(';')
         else :
             lbl=None
-        return [lbl, array([
+        r = [lbl, array([
                         map(float,
                             ln.replace(';',' ').replace(',','.').split()) 
                         for ln in df[skip:]]).T]
+        d=r[1][:2]
+        self.minX=min(d[0])
+        self.minY=min(d[1])
+        self.maxX=max(d[0])
+        self.maxY=max(d[1])
+        self.setLimits()
+        return r
+
+    def setLimits(self):
+        self.widthCtrl.SetMax(self.maxX-self.minX)
+        self.heightCtrl.SetMax(self.maxY-self.minY)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
