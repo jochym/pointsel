@@ -77,10 +77,11 @@ class CustomToolbar(NavToolbar):
         # create the default toolbar
         NavToolbar.__init__(self, plotCanvas)
         self.selector = RectSelector(self.canvas.figure.axes[0], 
-                            self.onselect, button=[1,3], # don't use middle button
+                            self.onSelect, button=[1,3], # don't use middle button
                              minspanx=5, minspany=5)
         self.selector.set_active(False)
         self.roi=None
+        self.fixedSize=False
 
     def _init_toolbar(self):
         self._parent = self.canvas.GetParent()
@@ -186,7 +187,7 @@ class CustomToolbar(NavToolbar):
         print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
         
 
-    def onselect(self, eclick, erelease):
+    def onSelect(self, eclick, erelease):
         'eclick and erelease are matplotlib events at press and release'
         print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
         print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
@@ -204,7 +205,7 @@ class CustomToolbar(NavToolbar):
                                 ls='solid', lw=2, color='r', fill=False, 
                                 zorder=5)
             self.canvas.figure.axes[0].add_patch(self.roi)
-        self.draw()
+        self.updateCanvas()
         print(self.roi.get_bbox())
         
 
@@ -218,7 +219,41 @@ class CustomToolbar(NavToolbar):
 
     def onFixedSize(self, ev):
         print('Fixed:',ev.IsChecked())
+        self.fixedSize=ev.IsChecked()
         
+    def onWidthChange(self, ev):
+        print('Width:',ev.GetValue())
+        self.roi.set_width(ev.GetValue())
+        self.updateCanvas()
+
+    def onHeightChange(self, ev):
+        print('Height:',ev.GetValue())
+        self.roi.set_height(ev.GetValue())
+        self.updateCanvas()
+        
+    def updateCanvas(self):
+        self.canvas.parentFrame.setWH(self.roi.get_width(),self.roi.get_height())
+        self.draw()
+
+
+class StatusBar(wx.StatusBar):
+    """
+    A status bar is added to _FigureFrame to allow measurements and the
+    previously selected scroll function to be displayed as a user
+    convenience.
+    """
+    def __init__(self, parent):
+        wx.StatusBar.__init__(self, parent, -1)
+        self.SetFieldsCount(3)
+        self.SetStatusText("None", 1)
+        self.SetStatusText("Area: None", 2)
+        #self.Reposition()
+
+    def set_function(self, string):
+        self.SetStatusText("%s" % string, 1)
+
+    def set_measurement(self, a):
+        self.SetStatusText("Area: %.2f um^2" % a, 2)
 
 
 class CanvasFrame(wx.Frame):
@@ -250,10 +285,10 @@ class CanvasFrame(wx.Frame):
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
 
         # Events.
-        self.Bind(wx.EVT_MENU, self.OnOpen, menuOpen)
-        self.Bind(wx.EVT_MENU, self.OnSave, menuSave)
-        self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
-        self.Bind(wx.EVT_MENU, self.OnAbout, menuAbout)
+        self.Bind(wx.EVT_MENU, self.onOpen, menuOpen)
+        self.Bind(wx.EVT_MENU, self.onSave, menuSave)
+        self.Bind(wx.EVT_MENU, self.onExit, menuExit)
+        self.Bind(wx.EVT_MENU, self.onAbout, menuAbout)
 
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -264,12 +299,12 @@ class CanvasFrame(wx.Frame):
         self.dirname, self.filename= os.path.split(self.datfn)
 
         self.plot,=self.axes.plot([],[],',')
-        self.axes.set_title('File: %s' % self.datfn)
         self.displayData(self.dat[1],self.dat[0])
 
-        statbar = StatusBarWx(self)
-        self.SetStatusBar(statbar)
+        self.statbar = StatusBar(self)
+        self.SetStatusBar(self.statbar)
         self.canvas = FigureCanvas(self, -1, self.figure)
+        self.canvas.parentFrame=self
         self.canvas.SetInitialSize(wx.Size(self.figure.bbox.width, 
                                             self.figure.bbox.height))
         self.canvas.SetFocus()
@@ -288,16 +323,19 @@ class CanvasFrame(wx.Frame):
         self.parbarSizer.Add(wx.StaticText(self,label=' x ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label=' um^2', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
         # Add plot canvas
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
 
         # Add toolbar
-        self.toolbar=self._get_toolbar(statbar)
+        self.toolbar=self._get_toolbar(self.statbar)
+        
+        # Bind the methods to the GUI elements
         self.fixedSizeCB.Bind(wx.EVT_CHECKBOX, self.toolbar.onFixedSize)
-
+        self.widthCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onWidthChange)
+        self.heightCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onHeightChange)
+                
         if self.toolbar is not None:
             self.toolbar.Realize()
             # Default window size is incorrect, so set
@@ -322,6 +360,7 @@ class CanvasFrame(wx.Frame):
             self.datfn='data/A339-SiC-560-1-SiC-WDS.txt'
 
         try :
+            self.dirname, self.filename=os.path.split(self.datfn)
             self.dat=self.readData(self.datfn)
             self.displayData(self.dat[1],self.dat[0])
             self.axes.set_title(self.filename)
@@ -369,6 +408,11 @@ class CanvasFrame(wx.Frame):
     def setLimits(self):
         self.widthCtrl.SetMax(self.maxX-self.minX)
         self.heightCtrl.SetMax(self.maxY-self.minY)
+        
+    def setWH(self, w, h):
+        self.widthCtrl.SetValue(w)
+        self.heightCtrl.SetValue(h)
+        self.statbar.set_measurement(w*h)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -379,7 +423,7 @@ class CanvasFrame(wx.Frame):
         self.axes.set_autoscale_on(True)
         #self.plot.set_data([],[])
         self.plot.set_data(dat[cols[0]],dat[cols[1]])
-        #self.plot.set_label(self.filename)
+        self.axes.set_title(self.filename)
         if lbl :
             self.axes.set_xlabel(lbl[cols[0]])
             self.axes.set_ylabel(lbl[cols[1]])
@@ -391,16 +435,16 @@ class CanvasFrame(wx.Frame):
         self.figure.canvas.draw()
 
 
-    def OnAbout(self,e):
+    def onAbout(self,e):
         # Create a message dialog box
         dlg = wx.MessageDialog(self, "A data point selector", "About PointSel", wx.OK)
         dlg.ShowModal() # Shows it
         dlg.Destroy() # finally destroy it when finished.
 
-    def OnExit(self,e):
+    def onExit(self,e):
         self.Close(True)  # Close the frame.
 
-    def OnOpen(self,e):
+    def onOpen(self,e):
         """ Open a file"""
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -409,14 +453,13 @@ class CanvasFrame(wx.Frame):
             self.datfn=os.path.join(self.dirname, self.filename)
             self.dat=self.readData(self.datfn)
             self.displayData(self.dat[1],self.dat[0])
-            self.axes.set_title(self.filename)
             self.redrawPlot()
         dlg.Destroy()
 
-    def OnPaint(self, event):
+    def onPaint(self, event):
         self.canvas.draw()
 
-    def OnSave(self, e):
+    def onSave(self, e):
         '''Save the selected points'''
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
@@ -427,6 +470,22 @@ class CanvasFrame(wx.Frame):
             datfn=os.path.join(dirname, filename)
             print('Will save into', datfn)
         dlg.Destroy()
+
+    def onFixedSize(self, ev):
+        print('Fixed:',ev.IsChecked())
+        if self.toolbar :
+            slef.toolbar.onFixedSize(ev)
+        
+    def onWidthChange(self, ev):
+        print('Width:',ev.GetValue())
+        if self.toolbar :
+            self.toolbar.onWidthChange(ev)
+
+    def onHeightChange(self, ev):
+        print('Height:',ev.GetValue())
+        if self.toolbar :
+            self.toolbar.onHeightChange(ev)
+
 
 
 class App(wx.App):
