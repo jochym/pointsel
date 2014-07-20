@@ -41,18 +41,47 @@ class RectSelector(RectangleSelector):
                         useblit=useblit, 
                         lineprops=lineprops, rectprops=rectprops, 
                         button=button)
-        self.mod=False
+                        
         self.fixedSize=None
         self.prevEvents=None
-        self.proxy=proxy
-        print('Init')
+        self.proxy=max(self.ax.transData.transform_point((proxy/100, proxy/100))-
+                    self.ax.transData.transform_point((0, 0)))
 
     def close_to_handles(self, ev):
-        return True
+        '''
+            Return zero or number of the closest corner.
+            2 3
+            1 4
+        '''
+        if not self.prevEvents :
+            return False
+        x,y=ev.xdata, ev.ydata
+        pe, re=self.prevEvents
+        l, r=min(pe.xdata,re.xdata), max(pe.xdata,re.xdata)
+        b, t=min(pe.ydata,re.ydata), max(pe.ydata,re.ydata)
+        d=self.proxy
+        if ( abs(l-x)<d or abs(r-x)<d ) and (abs(b-y)<d or abs(t-y)<d) :
+            #print('LTRB:', l,t,r,b, x, y)
+            if abs(l-x)<d :
+                if abs(b-y)<d : return 1
+                else : return 2
+            else :
+                if abs(t-y)<d : return 3
+                else : return 4
+        else :
+            return 0
     
-    def opposite_corner(self, ev):
-        return ev.xdata, ev.ydata
-    
+    def getLTRB(self):
+        pe, re=self.prevEvents
+        l, r=min(pe.xdata,re.xdata), max(pe.xdata,re.xdata)
+        b, t=min(pe.ydata,re.ydata), max(pe.ydata,re.ydata)
+        return l, t, r, b
+
+    def opposite_corner(self, pos):
+        l,t,r,b=self.getLTRB()
+        cl=[[r,t],[r,b],[l,b],[l,t]]
+        return cl[pos-1]
+        
     def setSize(self, w=None, h=None):
         if w is not None and h is not None:
             self.fixedSize=(w,h)
@@ -74,42 +103,30 @@ class RectSelector(RectangleSelector):
     def press(self, ev):
         if self.ignore(ev):
             return
-        if not self.fixedSize :
-            # Free selection box
-            if self.prevEvents :
-                # Some ROI is selected. 
-                # Modify it if we are close to one corner.
-                pass
-            else :
-                # We are first time here. Just select.
-                pass
-        else:
-            # The size is fixed. The box should be panned.
-            if self.prevEvents :
-                # Some ROI is selected. We need to move it.
-                # Move the centre of the roi to the press point.
-                ev.xdata+=self.wdata
-                ev.ydata+=self.hdata
-                RectangleSelector.press(self,ev)
-            else :
-                # We are first time here. Build up the roi.
-                pass
-        RectangleSelector.press(self,ev)
-            
+        h=self.close_to_handles(ev)
+        if not self.fixedSize and self.prevEvents and h :
+            # Not fixed size and active roi. 
+            # Clicked on the corner -> modify mode
+            x,y=self.opposite_corner(h)
+            self.to_draw.set_visible(self.visible)
+            self.eventpress = ev
+            self.eventpress.xdata=x
+            self.eventpress.ydata=y
+            return False
+        else :
+            RectangleSelector.press(self,ev)
+
         
     def release(self, ev):
         if self.eventpress is None or self.ignore(ev):
             return
-        if not self.fixedSize :
-            # Free selection, just do the normal thing
-            pass
-        elif self.prevEvents :
+        if self.fixedSize and self.prevEvents:
             # Panning mode. Modify the existing ROI. Do the shift.
             ev.xdata+=self.wdata
             ev.ydata+=self.hdata
-        else :
-            # Panning mode but first time here.
-            pass
+            self.eventpress.xdata=ev.xdata-2*self.wdata
+            self.eventpress.ydata=ev.ydata-2*self.hdata
+
         self.prevEvents=(self.eventpress,ev)
         pe, re=self.prevEvents
         self.wdata=(pe.xdata-re.xdata)/2
@@ -119,18 +136,12 @@ class RectSelector(RectangleSelector):
     def onmove(self, ev):
         if self.eventpress is None or self.ignore(ev):
             return
-        if not self.fixedSize :
-            # Free selection, just do the normal thing
-            pass
-        elif self.prevEvents :
+        if self.fixedSize and self.prevEvents :
             # Panning mode. Modify the existing ROI. Do the shift.
             ev.xdata+=self.wdata
             ev.ydata+=self.hdata
             self.eventpress.xdata=ev.xdata-2*self.wdata
             self.eventpress.ydata=ev.ydata-2*self.hdata
-        else :
-            # Panning mode but first time here.
-            pass
         RectangleSelector.onmove(self, ev)
             
 
@@ -248,18 +259,18 @@ class CustomToolbar(NavToolbar):
         for id in ['Zoom','Pan']:
             self.ToggleTool(self.wx_ids[id], False)
 
-        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
+        #print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
         self.ToggleTool(self.wx_ids['ROI'], 
                 self.GetToolState(self.wx_ids['ROI']) )
         self.toggle_selector()
-        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
+        #print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
         
 
     def onSelect(self, eclick, erelease):
         'eclick and erelease are matplotlib events at press and release'
-        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
-        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
-        print(' used button   : ', eclick.button)
+#        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
+#        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
+#        print(' used button   : ', eclick.button)
         if self.roi :
             self.roi.set_bounds(min(eclick.xdata,erelease.xdata),
                                 min(eclick.ydata,erelease.ydata),
@@ -274,7 +285,7 @@ class CustomToolbar(NavToolbar):
                                 zorder=5)
             self.canvas.figure.axes[0].add_patch(self.roi)
         self.updateCanvas()
-        print(self.roi.get_bbox())
+#        print(self.roi.get_bbox())
         
 
     def toggle_selector(self):
@@ -285,27 +296,34 @@ class CustomToolbar(NavToolbar):
         self.updateCanvas()
         
     def onWidthChange(self, ev):
-        x=self.roi.get_x()
-        w=self.roi.get_width()
-        nw=ev.GetValue()
-        self.roi.set_x(x+(w-nw)/2)
-        self.roi.set_width(nw)
-        self.updateCanvas()
+        if self.roi :
+            x=self.roi.get_x()
+            w=self.roi.get_width()
+            nw=ev.GetValue()
+            self.roi.set_x(x+(w-nw)/2)
+            self.roi.set_width(nw)
+            self.updateCanvas()
 
     def onHeightChange(self, ev):
-        y=self.roi.get_y()
-        h=self.roi.get_height()
-        nh=ev.GetValue()
-        self.roi.set_y(y+(h-nh)/2)
-        self.roi.set_height(nh)
-        self.updateCanvas()
+        if self.roi :
+            y=self.roi.get_y()
+            h=self.roi.get_height()
+            nh=ev.GetValue()
+            self.roi.set_y(y+(h-nh)/2)
+            self.roi.set_height(nh)
+            self.updateCanvas()
         
     def updateCanvas(self, redraw=True):
-        self.canvas.parentFrame.setWH(self.roi.get_width(),self.roi.get_height())
-        if self.fixedSize :
-            self.selector.setSize(self.roi.get_width(),self.roi.get_height())
-        else :
-            self.selector.setSize()
+        if self.roi :
+            self.canvas.parentFrame.statbar.set_center(
+                self.roi.get_x()+self.roi.get_width()/2,
+                self.roi.get_y()+self.roi.get_height()/2
+            )
+            self.canvas.parentFrame.setWH(self.roi.get_width(),self.roi.get_height())
+            if self.fixedSize :
+                self.selector.setSize(self.roi.get_width(),self.roi.get_height())
+            else :
+                self.selector.setSize()
         if redraw : self.draw()
 
 
@@ -317,23 +335,28 @@ class StatusBar(wx.StatusBar):
     """
     def __init__(self, parent):
         wx.StatusBar.__init__(self, parent, -1)
-        self.SetFieldsCount(3)
+        self.SetFieldsCount(4)
         self.SetStatusText("None", 1)
-        self.SetStatusText("Area: None", 2)
+        self.SetStatusText("Center: None", 2)
+        self.SetStatusText("Area: None", 3)
         #self.Reposition()
 
     def set_function(self, string):
         self.SetStatusText("%s" % string, 1)
 
-    def set_measurement(self, a):
-        self.SetStatusText("Area: %.2f um^2" % a, 2)
+    def set_center(self, x, y):
+        self.SetStatusText("Center: %.2f, %.2f um" % (x, y), 2)
+
+    def set_area(self, a):
+        self.SetStatusText("Area: %.2f um^2" % a, 3)
+        
 
 
 class CanvasFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self,None,-1,
-                            'Point Selector', size=(800,600))
+                            'Point Selector', size=(1000,1000))
 
         self.dirname=''
         self.filename=''
@@ -485,7 +508,7 @@ class CanvasFrame(wx.Frame):
     def setWH(self, w, h):
         self.widthCtrl.SetValue(w)
         self.heightCtrl.SetValue(h)
-        self.statbar.set_measurement(w*h)
+        self.statbar.set_area(w*h)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -545,17 +568,16 @@ class CanvasFrame(wx.Frame):
         dlg.Destroy()
 
     def onFixedSize(self, ev):
-        print('Fixed:',ev.IsChecked())
         if self.toolbar :
             slef.toolbar.onFixedSize(ev)
         
     def onWidthChange(self, ev):
-        print('Width:',ev.GetValue())
+#        print('Width:',ev.GetValue())
         if self.toolbar :
             self.toolbar.onWidthChange(ev)
 
     def onHeightChange(self, ev):
-        print('Height:',ev.GetValue())
+#        print('Height:',ev.GetValue())
         if self.toolbar :
             self.toolbar.onHeightChange(ev)
 
