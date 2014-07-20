@@ -356,7 +356,7 @@ class CanvasFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self,None,-1,
-                            'Point Selector', size=(1000,1000))
+                            'Point Selector', size=(800,600))
 
         self.dirname=''
         self.filename=''
