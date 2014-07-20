@@ -28,7 +28,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 class RectSelector(RectangleSelector):
-
+    '''
+    Works only in data coordinates!
+    '''
     def __init__(self, ax, onselect, button=None,
                  minspanx=None, minspany=None, useblit=True,
                  lineprops=None, rectprops=dict(facecolor='red', edgecolor = 'black',
@@ -40,7 +42,8 @@ class RectSelector(RectangleSelector):
                         lineprops=lineprops, rectprops=rectprops, 
                         button=button)
         self.mod=False
-        self.prevevents=None
+        self.fixedSize=None
+        self.prevEvents=None
         self.proxy=proxy
         print('Init')
 
@@ -49,22 +52,87 @@ class RectSelector(RectangleSelector):
     
     def opposite_corner(self, ev):
         return ev.xdata, ev.ydata
-        
+    
+    def setSize(self, w=None, h=None):
+        if w is not None and h is not None:
+            self.fixedSize=(w,h)
+            if self.prevEvents :
+                pe, re=self.prevEvents
+                cx=(pe.xdata+re.xdata)/2
+                cy=(pe.ydata+re.ydata)/2
+                dw=w/2
+                dh=h/2
+                pe.xdata = cx-dw
+                re.xdata = cx+dw
+                pe.ydata = cy-dh
+                re.ydata = cy+dh
+                self.wdata=(pe.xdata-re.xdata)/2
+                self.hdata=(pe.ydata-re.ydata)/2
+        else :
+            self.fixedSize=None
+
     def press(self, ev):
+        if self.ignore(ev):
+            return
+        if not self.fixedSize :
+            # Free selection box
+            if self.prevEvents :
+                # Some ROI is selected. 
+                # Modify it if we are close to one corner.
+                pass
+            else :
+                # We are first time here. Just select.
+                pass
+        else:
+            # The size is fixed. The box should be panned.
+            if self.prevEvents :
+                # Some ROI is selected. We need to move it.
+                # Move the centre of the roi to the press point.
+                ev.xdata+=self.wdata
+                ev.ydata+=self.hdata
+                RectangleSelector.press(self,ev)
+            else :
+                # We are first time here. Build up the roi.
+                pass
         RectangleSelector.press(self,ev)
-        if self.mod and self.close_to_handles(ev):
-            x,y=self.opposite_corner(ev)
-            self.eventpress.xdata=x
-            self.eventpress.ydata=y
-        if self.prevevents :
-            print('Prev:', self.prevevents[0], self.prevevents[1])
-            self.eventpress=self.prevevents[1]
-        self.mod=True
+            
         
     def release(self, ev):
-        self.prevevents=[self.eventpress,ev]
+        if self.eventpress is None or self.ignore(ev):
+            return
+        if not self.fixedSize :
+            # Free selection, just do the normal thing
+            pass
+        elif self.prevEvents :
+            # Panning mode. Modify the existing ROI. Do the shift.
+            ev.xdata+=self.wdata
+            ev.ydata+=self.hdata
+        else :
+            # Panning mode but first time here.
+            pass
+        self.prevEvents=(self.eventpress,ev)
+        pe, re=self.prevEvents
+        self.wdata=(pe.xdata-re.xdata)/2
+        self.hdata=(pe.ydata-re.ydata)/2
         RectangleSelector.release(self, ev)
 
+    def onmove(self, ev):
+        if self.eventpress is None or self.ignore(ev):
+            return
+        if not self.fixedSize :
+            # Free selection, just do the normal thing
+            pass
+        elif self.prevEvents :
+            # Panning mode. Modify the existing ROI. Do the shift.
+            ev.xdata+=self.wdata
+            ev.ydata+=self.hdata
+            self.eventpress.xdata=ev.xdata-2*self.wdata
+            self.eventpress.ydata=ev.ydata-2*self.hdata
+        else :
+            # Panning mode but first time here.
+            pass
+        RectangleSelector.onmove(self, ev)
+            
 
 class CustomToolbar(NavToolbar): 
     
@@ -210,30 +278,35 @@ class CustomToolbar(NavToolbar):
         
 
     def toggle_selector(self):
-        if self.selector.active:
-            print(' RectangleSelector deactivated.')
-            self.selector.set_active(False)
-        else :
-            print(' RectangleSelector activated.')
-            self.selector.set_active(True)
+        self.selector.set_active(not self.selector.active)
 
     def onFixedSize(self, ev):
-        print('Fixed:',ev.IsChecked())
         self.fixedSize=ev.IsChecked()
+        self.updateCanvas()
         
     def onWidthChange(self, ev):
-        print('Width:',ev.GetValue())
-        self.roi.set_width(ev.GetValue())
+        x=self.roi.get_x()
+        w=self.roi.get_width()
+        nw=ev.GetValue()
+        self.roi.set_x(x+(w-nw)/2)
+        self.roi.set_width(nw)
         self.updateCanvas()
 
     def onHeightChange(self, ev):
-        print('Height:',ev.GetValue())
-        self.roi.set_height(ev.GetValue())
+        y=self.roi.get_y()
+        h=self.roi.get_height()
+        nh=ev.GetValue()
+        self.roi.set_y(y+(h-nh)/2)
+        self.roi.set_height(nh)
         self.updateCanvas()
         
-    def updateCanvas(self):
+    def updateCanvas(self, redraw=True):
         self.canvas.parentFrame.setWH(self.roi.get_width(),self.roi.get_height())
-        self.draw()
+        if self.fixedSize :
+            self.selector.setSize(self.roi.get_width(),self.roi.get_height())
+        else :
+            self.selector.setSize()
+        if redraw : self.draw()
 
 
 class StatusBar(wx.StatusBar):
