@@ -624,8 +624,15 @@ class CanvasFrame(wx.Frame):
     
     def onFixedNumber(self, ev):
         if self.fixedNumberCB.IsChecked() :
+            if self.toolbar.roi is None :
+                wx.MessageBox('You need to make some selection before '+
+                                'using fixed number of points selection mode.',
+                                'Make a selection!')
+                self.fixedNumberCB.SetValue(False)
+                return
             self.numPtsCtrl.Enable()
             self.fixedSizeCB.SetValue(True)
+            self.targetSelected=self.numPtsCtrl.GetValue()
             self.onFixedSize(ev)
             self.handleROIforN()
         else :
@@ -662,9 +669,10 @@ class CanvasFrame(wx.Frame):
         x,y=self.toolbar.roi.get_xy()
         w=self.toolbar.roi.get_width()
         h=self.toolbar.roi.get_height()
-        tw=self.findROIforN(x+w/2,y+h/2,n)
-        print('ROIforN:',x,y,tw)
-        self.toolbar.updateROI(x,y,tw,tw)
+        cx, cy= x+w/2, y+h/2
+        ncx, ncy, tw=self.findROIforN(cx,cy,n)
+        #print('ROIforN:',cx,cy,tw)
+        self.updateROI(ncx-tw/2,ncy-tw/2,tw,tw)
         self.setWH(tw,tw)
 
     def findROIforN(self, cx, cy, n):
@@ -674,13 +682,12 @@ class CanvasFrame(wx.Frame):
         The function does not care about the GUI. Just the computation.
         '''
         
-        def optfun(w):
+        def optfun(w, x, y, d):
             hw=w/2
-            l=cx-hw
-            b=cy-hw
-            r=cx+hw
-            t=cy+hw
-            (l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)
+            l=x-hw
+            b=y-hw
+            r=x+hw
+            t=y+hw
             return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
             
         d=self.dat[1]
@@ -690,7 +697,7 @@ class CanvasFrame(wx.Frame):
         cx=max(cx,self.minX)
         cy=min(cy,self.maxY)
         cy=max(cy,self.minY)
-        return bisect(optfun, minW, maxW, xtol=10-4)
+        return cx, cy, bisect(optfun, minW, maxW, args=(cx,cy, d), xtol=10-6)
 
 class App(wx.App):
 
