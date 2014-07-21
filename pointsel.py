@@ -366,8 +366,8 @@ class CanvasFrame(wx.Frame):
         filemenu= wx.Menu()
         menuOpen = filemenu.Append(wx.ID_OPEN, 
                     "&Open"," Open a data file")
-        menuSave = filemenu.Append(wx.ID_SAVE, 
-                    "&Save"," Open a file to save the selected data")
+        menuExport = filemenu.Append(wx.ID_SAVE, 
+                    "&Export selection"," Export selected data to a file.")
         menuAbout= filemenu.Append(wx.ID_ABOUT, 
                     "&About"," Information about this program")
         menuExit = filemenu.Append(wx.ID_EXIT,
@@ -382,7 +382,7 @@ class CanvasFrame(wx.Frame):
 
         # Events.
         self.Bind(wx.EVT_MENU, self.onOpen, menuOpen)
-        self.Bind(wx.EVT_MENU, self.onSave, menuSave)
+        self.Bind(wx.EVT_MENU, self.onExport, menuExport)
         self.Bind(wx.EVT_MENU, self.onExit, menuExit)
         self.Bind(wx.EVT_MENU, self.onAbout, menuAbout)
 
@@ -414,11 +414,11 @@ class CanvasFrame(wx.Frame):
         self.parbarSizer.Add(self.fixedSizeCB,0, wx.CENTER | wx.LEFT)
         self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=0.1)
         self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=0.1)
-        self.parbarSizer.Add(wx.StaticText(self,label='  W x H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(wx.StaticText(self,label='  W: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.widthCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label=' x ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(wx.StaticText(self,label='um   H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label=' um^2', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(wx.StaticText(self,label=' um', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
         # Add plot canvas
@@ -501,6 +501,22 @@ class CanvasFrame(wx.Frame):
         self.setLimits()
         return r
 
+    def exportData(self, fn):
+        try :
+            l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
+            print(l,t,r,b)
+        except AttributeError :
+            wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
+                            'Nothing to export!')
+            return
+        hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
+        d=self.dat[1]
+        print(hdr)
+        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
+        print(sel.shape)
+        np.savetxt(fn, sel.T, fmt='%13.3f', delimiter=' ; ', newline='\n', 
+                header=hdr, footer='', comments='')
+
     def setLimits(self):
         self.widthCtrl.SetMax(self.maxX-self.minX)
         self.heightCtrl.SetMax(self.maxY-self.minY)
@@ -555,16 +571,15 @@ class CanvasFrame(wx.Frame):
     def onPaint(self, event):
         self.canvas.draw()
 
-    def onSave(self, e):
-        '''Save the selected points'''
+    def onExport(self, e):
+        '''Export the selected points'''
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
             # We are saving a selection not the data.
             filename = dlg.GetFilename()
             dirname = dlg.GetDirectory()
-            datfn=os.path.join(dirname, filename)
-            print('Will save into', datfn)
+            self.exportData(os.path.join(dirname, filename))
         dlg.Destroy()
 
     def onFixedSize(self, ev):
