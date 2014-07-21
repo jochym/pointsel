@@ -386,6 +386,8 @@ class CanvasFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onExit, menuExit)
         self.Bind(wx.EVT_MENU, self.onAbout, menuAbout)
 
+        self.numSelected = 0
+        self.numPoints = 0
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
 
@@ -419,6 +421,11 @@ class CanvasFrame(wx.Frame):
         self.parbarSizer.Add(wx.StaticText(self,label='um   H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label=' um', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.fixedNumberCB = wx.CheckBox(self, style=wx.ALIGN_RIGHT)
+        self.parbarSizer.Add(wx.StaticText(self,label='  #Points', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.fixedNumberCB,0, wx.CENTER | wx.LEFT)
+        self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
+        self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
         # Add plot canvas
@@ -431,6 +438,7 @@ class CanvasFrame(wx.Frame):
         self.fixedSizeCB.Bind(wx.EVT_CHECKBOX, self.toolbar.onFixedSize)
         self.widthCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onWidthChange)
         self.heightCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onHeightChange)
+        self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
                 
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -493,38 +501,57 @@ class CanvasFrame(wx.Frame):
                         map(float,
                             ln.replace(';',' ').replace(',','.').split()) 
                         for ln in df[skip:]]).T]
-        d=r[1][:2]
+        d=r[1]
         self.minX=min(d[0])
         self.minY=min(d[1])
         self.maxX=max(d[0])
         self.maxY=max(d[1])
+        self.numPoints = d.shape[1]
         self.setLimits()
         return r
 
+    def getSelected(self, bbox=None):
+        if bbox is None :
+            try :
+                l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
+            except AttributeError :
+                return None
+        else :
+            l,b,r,t=array(bbox).reshape(4)
+        d=self.dat[1]
+        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
+        return sel
+
     def exportData(self, fn):
-        try :
-            l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
-            print(l,t,r,b)
-        except AttributeError :
+#        try :
+#            l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
+#        except AttributeError :
+#            return
+#        d=self.dat[1]
+#        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
+        hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
+        sel=self.getSelected()
+        if sel :
+            np.savetxt(fn, sel.T, fmt='%13.3f', delimiter=' ; ', newline='\n', 
+                            header=hdr, footer='', comments='')
+        else :
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
                             'Nothing to export!')
-            return
-        hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
-        d=self.dat[1]
-        print(hdr)
-        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
-        print(sel.shape)
-        np.savetxt(fn, sel.T, fmt='%13.3f', delimiter=' ; ', newline='\n', 
-                header=hdr, footer='', comments='')
 
     def setLimits(self):
         self.widthCtrl.SetMax(self.maxX-self.minX)
         self.heightCtrl.SetMax(self.maxY-self.minY)
+        self.numPtsCtrl.SetRange(0,self.numPoints)
         
     def setWH(self, w, h):
         self.widthCtrl.SetValue(w)
         self.heightCtrl.SetValue(h)
         self.statbar.set_area(w*h)
+        try :
+            self.numSelected=self.getSelected().shape[1]
+        except AttributeError :
+            self.numSelected=0
+        self.numPtsCtrl.SetValue(self.numSelected)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -595,6 +622,13 @@ class CanvasFrame(wx.Frame):
 #        print('Height:',ev.GetValue())
         if self.toolbar :
             self.toolbar.onHeightChange(ev)
+
+    def onNumberChange(self, ev):
+        if not self.fixedNumberCB.IsChecked() :
+            # Just reset the value to the number of selected points.
+            self.numPtsCtrl.SetValue(self.numSelected)
+            return
+        
 
 
 
