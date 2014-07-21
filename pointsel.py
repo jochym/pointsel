@@ -531,7 +531,7 @@ class CanvasFrame(wx.Frame):
 #        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
         hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
         sel=self.getSelected()
-        if sel :
+        if not sel is None :
             np.savetxt(fn, sel.T, fmt='%13.3f', delimiter=' ; ', newline='\n', 
                             header=hdr, footer='', comments='')
         else :
