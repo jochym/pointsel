@@ -9,6 +9,7 @@
 from __future__ import division, print_function
 from numpy import array
 import numpy as np
+from scipy.optimize import bisect
 import sys, os
 import matplotlib
 import wxversion
@@ -271,22 +272,26 @@ class CustomToolbar(NavToolbar):
 #        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
 #        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
 #        print(' used button   : ', eclick.button)
-        if self.roi :
-            self.roi.set_bounds(min(eclick.xdata,erelease.xdata),
-                                min(eclick.ydata,erelease.ydata),
-                                abs(eclick.xdata-erelease.xdata),
-                                abs(eclick.ydata-erelease.ydata))
-        else :
-            self.roi=Rectangle((min(eclick.xdata,erelease.xdata),
-                                min(eclick.ydata,erelease.ydata)),
-                                abs(eclick.xdata-erelease.xdata),
-                                abs(eclick.ydata-erelease.ydata),
+        self.updateROI(min(eclick.xdata,erelease.xdata),
+                       min(eclick.ydata,erelease.ydata),
+                       abs(eclick.xdata-erelease.xdata),
+                       abs(eclick.ydata-erelease.ydata))
+        if self.canvas.parentFrame.fixedNumberCB.IsChecked() :
+            # We are working in the fixed-number mode
+            # We need to find new roi for this center point
+            # The handler will call the update ROI function for us.
+            self.canvas.parentFrame.handleROIforN()
+
+    def updateROI(self, x, y, w, h):
+        if self.roi is None :
+            #print('upd ROI:', x, y, w, h)
+            self.roi=Rectangle((x,y),w,h,
                                 ls='solid', lw=2, color='r', fill=False, 
                                 zorder=5)
             self.canvas.figure.axes[0].add_patch(self.roi)
+        else :
+            self.roi.set_bounds(x,y,w,h)
         self.updateCanvas()
-#        print(self.roi.get_bbox())
-        
 
     def toggle_selector(self):
         self.selector.set_active(not self.selector.active)
@@ -335,10 +340,11 @@ class StatusBar(wx.StatusBar):
     """
     def __init__(self, parent):
         wx.StatusBar.__init__(self, parent, -1)
-        self.SetFieldsCount(4)
+        self.SetFieldsCount(5)
         self.SetStatusText("None", 1)
         self.SetStatusText("Center: None", 2)
         self.SetStatusText("Area: None", 3)
+        self.SetStatusText("#Pts: None", 4)
         #self.Reposition()
 
     def set_function(self, string):
@@ -349,6 +355,9 @@ class StatusBar(wx.StatusBar):
 
     def set_area(self, a):
         self.SetStatusText("Area: %.2f um^2" % a, 3)
+
+    def set_number(self, n):
+        self.SetStatusText("#Pts: %d" % n, 4)
         
 
 
@@ -387,6 +396,7 @@ class CanvasFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onAbout, menuAbout)
 
         self.numSelected = 0
+        self.targetSelected = 0
         self.numPoints = 0
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -425,6 +435,7 @@ class CanvasFrame(wx.Frame):
         self.parbarSizer.Add(wx.StaticText(self,label='  #Points', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.fixedNumberCB,0, wx.CENTER | wx.LEFT)
         self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
+        self.numPtsCtrl.Disable()
         self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
@@ -438,6 +449,7 @@ class CanvasFrame(wx.Frame):
         self.fixedSizeCB.Bind(wx.EVT_CHECKBOX, self.toolbar.onFixedSize)
         self.widthCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onWidthChange)
         self.heightCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onHeightChange)
+        self.fixedNumberCB.Bind(wx.EVT_CHECKBOX, self.onFixedNumber)
         self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
                 
         if self.toolbar is not None:
@@ -518,17 +530,12 @@ class CanvasFrame(wx.Frame):
                 return None
         else :
             l,b,r,t=array(bbox).reshape(4)
+        #print('LTRB:', l,t,r,b)
         d=self.dat[1]
         sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
         return sel
 
     def exportData(self, fn):
-#        try :
-#            l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
-#        except AttributeError :
-#            return
-#        d=self.dat[1]
-#        sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
         hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
         sel=self.getSelected()
         if not sel is None :
@@ -551,7 +558,9 @@ class CanvasFrame(wx.Frame):
             self.numSelected=self.getSelected().shape[1]
         except AttributeError :
             self.numSelected=0
-        self.numPtsCtrl.SetValue(self.numSelected)
+        if not self.fixedNumberCB.IsChecked() :
+            self.numPtsCtrl.SetValue(self.numSelected)
+        self.statbar.set_number(self.numSelected)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -611,15 +620,26 @@ class CanvasFrame(wx.Frame):
 
     def onFixedSize(self, ev):
         if self.toolbar :
-            slef.toolbar.onFixedSize(ev)
-        
+            self.toolbar.onFixedSize(ev)
+    
+    def onFixedNumber(self, ev):
+        if self.fixedNumberCB.IsChecked() :
+            self.numPtsCtrl.Enable()
+            self.fixedSizeCB.SetValue(True)
+            self.onFixedSize(ev)
+            self.handleROIforN()
+        else :
+            self.numPtsCtrl.Disable()
+            
+    def updateROI(self, x, y, w, h):
+        self.toolbar.updateROI(x,y,w,h)
+        self.redrawPlot()
+    
     def onWidthChange(self, ev):
-#        print('Width:',ev.GetValue())
         if self.toolbar :
             self.toolbar.onWidthChange(ev)
 
     def onHeightChange(self, ev):
-#        print('Height:',ev.GetValue())
         if self.toolbar :
             self.toolbar.onHeightChange(ev)
 
@@ -628,9 +648,49 @@ class CanvasFrame(wx.Frame):
             # Just reset the value to the number of selected points.
             self.numPtsCtrl.SetValue(self.numSelected)
             return
+        self.targetSelected=self.numPtsCtrl.GetValue()
+        self.handleROIforN()
+
+    def handleROIforN(self):
+        '''
+        GUI part of fixed number selection mode
+        '''
+        if not self.fixedNumberCB.IsChecked() :
+            # Not our mode. Nothing to do!
+            return
+        n=self.targetSelected
+        x,y=self.toolbar.roi.get_xy()
+        w=self.toolbar.roi.get_width()
+        h=self.toolbar.roi.get_height()
+        tw=self.findROIforN(x+w/2,y+h/2,n)
+        print('ROIforN:',x,y,tw)
+        self.toolbar.updateROI(x,y,tw,tw)
+        self.setWH(tw,tw)
+
+    def findROIforN(self, cx, cy, n):
+        '''
+        Find the squere ROI around target point (cx, cy) containing 
+        as close as possible to target number of points (n). 
+        The function does not care about the GUI. Just the computation.
+        '''
         
-
-
+        def optfun(w):
+            hw=w/2
+            l=cx-hw
+            b=cy-hw
+            r=cx+hw
+            t=cy+hw
+            (l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)
+            return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
+            
+        d=self.dat[1]
+        minW=0
+        maxW=2*max(self.maxX-self.minX,self.maxY-self.minY)
+        cx=min(cx,self.maxX)
+        cx=max(cx,self.minX)
+        cy=min(cy,self.maxY)
+        cy=max(cy,self.minY)
+        return bisect(optfun, minW, maxW, xtol=10-4)
 
 class App(wx.App):
 
