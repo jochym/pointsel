@@ -541,10 +541,10 @@ class CanvasFrame(wx.Frame):
         return sel
 
     def exportData(self, fn):
-        hdr=' ; '.join(['%13s' % s for s in self.dat[0]])
+        hdr=' ; '.join(['%10s' % s for s in self.dat[0]])
         sel=self.getSelected()
         if not sel is None :
-            np.savetxt(fn, sel.T, fmt='%13.3f', delimiter=' ; ', newline='\n', 
+            np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
                             header=hdr, footer='', comments='')
         else :
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
@@ -629,7 +629,11 @@ class CanvasFrame(wx.Frame):
 
     def onExport(self, e):
         '''Export the selected points'''
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "Data file (*.txt)|*.txt|Data file (*.dat)|*.dat|All files (*.*)|*.*", wx.SAVE|wx.FD_OVERWRITE_PROMPT)
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", 
+                                "Data file (*.txt)|*.txt|"+
+                                "Data file (*.dat)|*.dat|"+
+                                "All files (*.*)|*.*", 
+                                wx.SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
             # We are saving a selection not the data.
