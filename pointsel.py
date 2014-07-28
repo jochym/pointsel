@@ -193,18 +193,18 @@ class CustomToolbar(NavToolbar):
 
         self.Realize()
 
+    def _set_markers(self):
+        self.canvas.parentFrame.set_markers()
+
     def _update_view(self):
         NavToolbar._update_view(self)
+        self._set_markers()
         # MacOS needs a forced draw to update plot
         if wx.Platform == '__WXMAC__':
             self.canvas.draw()
 
     def draw(self):
-        sel=self.canvas.parentFrame.getSelected(self.ax.get_xlim()+self.ax.get_ylim())
-        if sel.shape[1] < 5000 :
-            self.canvas.parentFrame.plot.set_marker('o')
-        else :
-            self.canvas.parentFrame.plot.set_marker(',')
+        self._set_markers()
         NavToolbar.draw(self)
         # MacOS needs a forced draw to update plot
         if wx.Platform == '__WXMAC__':
@@ -507,6 +507,7 @@ class CanvasFrame(wx.Frame):
                             ln.replace(';',' ').replace(',','.').split()) 
                         for ln in df[skip:]]).T]
         d=r[1]
+        #print(d.shape)
         d[0]-=min(d[0])
         d[1]-=min(d[1])
         self.minX=0
@@ -576,9 +577,18 @@ class CanvasFrame(wx.Frame):
             self.axes.set_ylabel(lbl[cols[1]])
         #self.axes.legend((self.filename,))
 
+    def set_markers(self):
+        sel=self.getSelected(self.axes.get_xlim()+self.axes.get_ylim())
+        if sel.shape[1] < 5000 :
+            self.plot.set_marker('o')
+        else :
+            self.plot.set_marker(',')
+
+
     def redrawPlot(self):
         self.axes.relim()
         self.axes.autoscale_view(True,True,True)
+        self.set_markers()
         self.figure.canvas.draw()
 
 
@@ -600,6 +610,12 @@ class CanvasFrame(wx.Frame):
             self.datfn=os.path.join(self.dirname, self.filename)
             self.dat=self.readData(self.datfn)
             self.displayData(self.dat[1],self.dat[0])
+            self.updateROI(0,0,self.maxX,self.maxY)
+            self.axes.set_xlim(0,self.maxX)
+            self.axes.set_ylim(0,self.maxY)
+            self.toolbar._views.clear()
+            self.toolbar._positions.clear()
+            self.toolbar.push_current()
             self.redrawPlot()
         dlg.Destroy()
 
@@ -608,7 +624,7 @@ class CanvasFrame(wx.Frame):
 
     def onExport(self, e):
         '''Export the selected points'''
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "Data file (*.txt)|*.txt|Data file (*.dat)|*.dat|All files (*.*)|*.*", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
             # We are saving a selection not the data.
