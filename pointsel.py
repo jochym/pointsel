@@ -629,7 +629,7 @@ class CanvasFrame(wx.Frame):
 
     def onExport(self, e):
         '''Export the selected points'''
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "Data file (*.txt)|*.txt|Data file (*.dat)|*.dat|All files (*.*)|*.*", wx.SAVE)
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "Data file (*.txt)|*.txt|Data file (*.dat)|*.dat|All files (*.*)|*.*", wx.SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
             # We are saving a selection not the data.
