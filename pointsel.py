@@ -24,9 +24,13 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import RectangleSelector
 from matplotlib.patches import Rectangle
 
+from matplotlib import rcParams
+
 import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+rcParams['savefig.format']='tif'
 
 class RectSelector(RectangleSelector):
     '''
