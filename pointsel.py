@@ -629,7 +629,7 @@ class CanvasFrame(wx.Frame):
 
     def onExport(self, e):
         '''Export the selected points'''
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", 
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "*.txt", 
                                 "Data file (*.txt)|*.txt|"+
                                 "Data file (*.dat)|*.dat|"+
                                 "All files (*.*)|*.*", 
