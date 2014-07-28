@@ -404,8 +404,9 @@ class CanvasFrame(wx.Frame):
         self.dirname, self.filename= os.path.split(self.datfn)
 
         self.plot,=self.axes.plot([],[],',')
+        self.axes.grid(color='k', alpha=0.5, ls='-')
         self.displayData(self.dat[1],self.dat[0])
-
+        
         self.statbar = StatusBar(self)
         self.SetStatusBar(self.statbar)
         self.canvas = FigureCanvas(self, -1, self.figure)
