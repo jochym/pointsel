@@ -200,6 +200,11 @@ class CustomToolbar(NavToolbar):
             self.canvas.draw()
 
     def draw(self):
+        sel=self.canvas.parentFrame.getSelected(self.ax.get_xlim()+self.ax.get_ylim())
+        if sel.shape[1] < 5000 :
+            self.canvas.parentFrame.plot.set_marker('o')
+        else :
+            self.canvas.parentFrame.plot.set_marker(',')
         NavToolbar.draw(self)
         # MacOS needs a forced draw to update plot
         if wx.Platform == '__WXMAC__':
@@ -502,22 +507,28 @@ class CanvasFrame(wx.Frame):
                             ln.replace(';',' ').replace(',','.').split()) 
                         for ln in df[skip:]]).T]
         d=r[1]
-        self.minX=min(d[0])
-        self.minY=min(d[1])
+        d[0]-=min(d[0])
+        d[1]-=min(d[1])
+        self.minX=0
+        self.minY=0
         self.maxX=max(d[0])
         self.maxY=max(d[1])
         self.numPoints = d.shape[1]
         self.setLimits()
         return r
 
-    def getSelected(self, bbox=None):
-        if bbox is None :
+    def getSelected(self, lrbt=None):
+        '''
+        Return an array of points inside the lrbt bounding box.
+        '''
+        if lrbt is None :
             try :
                 l,b,r,t=array(self.toolbar.roi.get_bbox()).reshape(4)
             except AttributeError :
                 return None
         else :
-            l,b,r,t=array(bbox).reshape(4)
+            # The bbox is expected as l,r,b,t tuple!
+            l,r,b,t=array(lrbt).reshape(4)
         #print('LTRB:', l,t,r,b)
         d=self.dat[1]
         sel=d[...,(l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t)]
