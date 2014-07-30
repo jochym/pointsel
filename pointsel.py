@@ -406,7 +406,6 @@ class CanvasFrame(wx.Frame):
 
         self.plot,=self.axes.plot([],[],',')
         self.axes.grid(color='k', alpha=0.75, lw=1, ls='-')
-        self.displayData(self.dat[1],self.dat[0])
         
         self.statbar = StatusBar(self)
         self.SetStatusBar(self.statbar)
@@ -427,7 +426,7 @@ class CanvasFrame(wx.Frame):
         self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
         self.widthCtrl.SetDigits(2)
         self.heightCtrl.SetDigits(2)
-        self.fnameCtrl = wx.TextCtrl(self, value='', size=(200,-1))
+        self.titleCtrl = wx.TextCtrl(self, value='', size=(200,-1))
         self.parbarSizer.Add(wx.StaticText(self,label='  W: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.widthCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label='um   H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
@@ -438,8 +437,8 @@ class CanvasFrame(wx.Frame):
         self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
         self.numPtsCtrl.Disable()
         self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label='  File:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.parbarSizer.Add(self.fnameCtrl, 0, wx.TOP | wx.LEFT)
+        self.parbarSizer.Add(wx.StaticText(self,label='  Title:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.titleCtrl, 0, wx.TOP | wx.LEFT)
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         self.sizer.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
         
@@ -455,7 +454,7 @@ class CanvasFrame(wx.Frame):
         self.heightCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onHeightChange)
         self.fixedNumberCB.Bind(wx.EVT_CHECKBOX, self.onFixedNumber)
         self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
-        self.fnameCtrl.Bind(wx.EVT_TEXT, self.onFNameChange)
+        self.titleCtrl.Bind(wx.EVT_TEXT, self.onTitleChange)
                 
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -473,6 +472,8 @@ class CanvasFrame(wx.Frame):
         self.SetSizer(self.sizer)
         self.Fit()
 
+#        self.displayData(self.dat[1],self.dat[0])
+
         # Read example data. To be removed in the future.
         try :
             self.datfn=sys.argv[1]
@@ -488,7 +489,7 @@ class CanvasFrame(wx.Frame):
         except IOError :
             print('Warning: Cannot open file ', self.datfn)
         
-        self.fnameCtrl.SetValue(self.filename)
+        self.titleCtrl.SetValue(self.filename)
         self.redrawPlot()
 
 
@@ -584,7 +585,7 @@ class CanvasFrame(wx.Frame):
         self.axes.set_autoscale_on(True)
         #self.plot.set_data([],[])
         self.plot.set_data(dat[cols[0]],dat[cols[1]])
-        self.axes.set_title(self.filename)
+        self.titleCtrl.SetValue(self.filename)
         if lbl :
             self.axes.set_xlabel(lbl[cols[0]])
             self.axes.set_ylabel(lbl[cols[1]])
@@ -690,10 +691,8 @@ class CanvasFrame(wx.Frame):
         self.targetSelected=self.numPtsCtrl.GetValue()
         self.handleROIforN()
 
-    def onFNameChange(self, ev):
-        print(ev.GetString())
-        self.filename=self.fnameCtrl.GetValue()
-        self.axes.set_title(self.filename)
+    def onTitleChange(self, ev):
+        self.axes.set_title(ev.GetString())
         self.redrawPlot()
 
     def handleROIforN(self):
