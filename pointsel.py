@@ -429,16 +429,30 @@ class CanvasFrame(wx.Frame):
         
         # Build the side bar
         self.sideBar = wx.BoxSizer(wx.VERTICAL)
-        self.areaDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
-        self.sideBar.Add(self.areaDSP, 0, wx.BOTTOM | wx.LEFT)
-        self.sideBar.AddSpacer(3)
         self.positionDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.positionDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+        self.whDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.whDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+        self.areaDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.areaDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
         self.numberDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.numberDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-
+        self.sideBar.Add(wx.StaticLine(self), 0, wx.BOTTOM | wx.LEFT)
+        
+        # Anchor switch
+#        self.anchorRB = wx.RadioBox(self, style= wx.RA_SPECIFY_ROWS | wx.RA_SPECIFY_COLS, size=(3,3))
+        self.anchorRB = wx.RadioBox(self, label='Anchor', 
+                                    choices=['LT','L','LB','T','C','B','RT','R','RB'],
+                                    majorDimension=3,
+                                    style= wx.RA_SPECIFY_ROWS)
+        # Center is default
+        self.anchorRB.SetSelection(4)
+        self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT)
+        
         # Build the window
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
@@ -448,6 +462,7 @@ class CanvasFrame(wx.Frame):
         cont.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         cont.AddSpacer(3)
         cont.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
+        cont.AddSpacer(3)
 
         # Add toolbar
         self.toolbar=self._get_toolbar(self.statbar)
@@ -459,6 +474,7 @@ class CanvasFrame(wx.Frame):
         self.fixedNumberCB.Bind(wx.EVT_CHECKBOX, self.onFixedNumber)
         self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
         self.titleCtrl.Bind(wx.EVT_TEXT, self.onTitleChange)
+        self.anchorRB.Bind(wx.EVT_RADIOBOX, self.onAnchorChange)
                 
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -496,6 +512,7 @@ class CanvasFrame(wx.Frame):
 
         # Init sidebar
         self.showPos()
+        self.showWH()
         self.showArea()
         self.showNumber()
 
@@ -575,18 +592,23 @@ class CanvasFrame(wx.Frame):
     
     def showPos(self, x=0, y=0):
         self.positionDSP.SetLabel('Position (um):  \n X: %-8g\n Y: %-8g' % (x, y))
-    
+
+    def showWH(self, w=0, h=0):
+        self.whDSP.SetLabel('Size (um):  \n W: %-8g\n H: %-8g' % (w, h))
+
     def showNumber(self, n=0):
         self.numberDSP.SetLabel('Selected points: \n %-d' % (n))
     
     def showROI(self, x, y, w, h):
         self.showPos(x,y)
         self.showArea(w*h)
+        self.showWH(w,h)
 
     def setWH(self, w, h):
         self.widthCtrl.SetValue(w)
         self.heightCtrl.SetValue(h)
         self.showArea(w*h)
+        self.showWH(w,h)
         try :
             self.numSelected=self.getSelected().shape[1]
         except AttributeError :
@@ -715,6 +737,10 @@ class CanvasFrame(wx.Frame):
     def onTitleChange(self, ev):
         self.axes.set_title(ev.GetString())
         self.redrawPlot()
+
+    def onAnchorChange(self, ev):
+        s=self.anchorRB.GetSelection()
+        print(self.anchorRB.GetString(s))
 
     def handleROIforN(self):
         '''
