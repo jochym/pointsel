@@ -788,7 +788,7 @@ class CanvasFrame(wx.Frame):
         cx=max(cx,self.minX)
         cy=min(cy,self.maxY)
         cy=max(cy,self.minY)
-        return cx, cy, bisect(optfun, minW, maxW, args=(cx,cy, d), xtol=10-6)
+        return cx, cy, bisect(optfun, minW, maxW, args=(cx,cy, d), xtol=10e-12)
 
 class App(wx.App):
 
