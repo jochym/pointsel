@@ -354,6 +354,9 @@ class CanvasFrame(wx.Frame):
         self.dirname=''
         self.filename=''
         self.SetBackgroundColour(wx.NamedColour("WHITE"))
+        self.SetFont(wx.Font(15 if wx.Platform == '__WXMAC__' else 11, 
+                                wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
+
 
         # Setting up the menu.
         filemenu= wx.Menu()
@@ -429,6 +432,11 @@ class CanvasFrame(wx.Frame):
         
         # Build the side bar
         self.sideBar = wx.BoxSizer(wx.VERTICAL)
+        heading = wx.StaticText(self, label='Measurements', )
+        heading.SetFont(self.GetFont().MakeBold())
+        self.sideBar.Add(heading, 0, wx.TOP | wx.ALIGN_CENTER) 
+        self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
+        self.sideBar.AddSpacer(3)
         self.positionDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.positionDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
@@ -441,10 +449,9 @@ class CanvasFrame(wx.Frame):
         self.numberDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.numberDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.sideBar.Add(wx.StaticLine(self), 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         
         # Anchor switch
-#        self.anchorRB = wx.RadioBox(self, style= wx.RA_SPECIFY_ROWS | wx.RA_SPECIFY_COLS, size=(3,3))
         self.anchorRB = wx.RadioBox(self, label='Anchor', 
                                     choices=['LT','L','LB','T','C','B','RT','R','RB'],
                                     majorDimension=3,
@@ -591,13 +598,13 @@ class CanvasFrame(wx.Frame):
         self.areaDSP.SetLabel('Area (um^2):  \n %-8g' % (a))
     
     def showPos(self, x=0, y=0):
-        self.positionDSP.SetLabel('Position (um):  \n X: %-8g\n Y: %-8g' % (x, y))
+        self.positionDSP.SetLabel(u'Position (um):  \n X: %-8g\n Y: %-8g' % (x, y))
 
     def showWH(self, w=0, h=0):
         self.whDSP.SetLabel('Size (um):  \n W: %-8g\n H: %-8g' % (w, h))
 
     def showNumber(self, n=0):
-        self.numberDSP.SetLabel('Selected points: \n %-d' % (n))
+        self.numberDSP.SetLabel('Selected pnts: \n %-d' % (n))
     
     def showROI(self, x, y, w, h):
         self.showPos(x,y)
