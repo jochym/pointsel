@@ -362,7 +362,7 @@ class CanvasFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self,None,-1,
-                            'Point Selector', size=(800,600))
+                            'Point Selector')
 
         self.dirname=''
         self.filename=''
@@ -395,7 +395,8 @@ class CanvasFrame(wx.Frame):
         self.numSelected = 0
         self.targetSelected = 0
         self.numPoints = 0
-        self.figure = Figure()
+        self.figure = Figure(figsize=(10,10))
+        self.figure.set_tight_layout(True)
         self.axes = self.figure.add_subplot(111)
 
         
@@ -419,25 +420,28 @@ class CanvasFrame(wx.Frame):
         
         # Build the parameters bar
         self.parbarSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.fixedSizeCB = wx.CheckBox(self, style=wx.ALIGN_RIGHT)
-        self.parbarSizer.Add(wx.StaticText(self,label='Fixed size', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.sideBar = wx.BoxSizer(wx.VERTICAL)
+        self.fixedSizeCB = wx.CheckBox(self, label='Fixed size', style=wx.ALIGN_RIGHT)
         self.parbarSizer.Add(self.fixedSizeCB,0, wx.CENTER | wx.LEFT)
         self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
         self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
         self.widthCtrl.SetDigits(2)
         self.heightCtrl.SetDigits(2)
+        self.fnameCtrl = wx.TextCtrl(self, value='', size=(200,-1))
         self.parbarSizer.Add(wx.StaticText(self,label='  W: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.widthCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label='um   H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label=' um', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.fixedNumberCB = wx.CheckBox(self, style=wx.ALIGN_RIGHT)
-        self.parbarSizer.Add(wx.StaticText(self,label='  #Points', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.fixedNumberCB = wx.CheckBox(self,label='  #Points', style=wx.ALIGN_RIGHT)
         self.parbarSizer.Add(self.fixedNumberCB,0, wx.CENTER | wx.LEFT)
         self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
         self.numPtsCtrl.Disable()
         self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
+        self.parbarSizer.Add(wx.StaticText(self,label='  File:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        self.parbarSizer.Add(self.fnameCtrl, 0, wx.TOP | wx.LEFT)
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
+        self.sizer.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
         
         # Add plot canvas
         self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
@@ -451,6 +455,7 @@ class CanvasFrame(wx.Frame):
         self.heightCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onHeightChange)
         self.fixedNumberCB.Bind(wx.EVT_CHECKBOX, self.onFixedNumber)
         self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
+        self.fnameCtrl.Bind(wx.EVT_TEXT, self.onFNameChange)
                 
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -482,7 +487,8 @@ class CanvasFrame(wx.Frame):
             self.axes.set_title(self.filename)
         except IOError :
             print('Warning: Cannot open file ', self.datfn)
-
+        
+        self.fnameCtrl.SetValue(self.filename)
         self.redrawPlot()
 
 
@@ -683,6 +689,12 @@ class CanvasFrame(wx.Frame):
             return
         self.targetSelected=self.numPtsCtrl.GetValue()
         self.handleROIforN()
+
+    def onFNameChange(self, ev):
+        print(ev.GetString())
+        self.filename=self.fnameCtrl.GetValue()
+        self.axes.set_title(self.filename)
+        self.redrawPlot()
 
     def handleROIforN(self):
         '''
