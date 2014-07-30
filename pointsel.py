@@ -404,7 +404,7 @@ class CanvasFrame(wx.Frame):
         self.dirname, self.filename= os.path.split(self.datfn)
 
         self.plot,=self.axes.plot([],[],',')
-        self.axes.grid(color='k', alpha=0.5, ls='-')
+        self.axes.grid(color='k', alpha=0.75, lw=1, ls='-')
         self.displayData(self.dat[1],self.dat[0])
         
         self.statbar = StatusBar(self)
@@ -506,13 +506,13 @@ class CanvasFrame(wx.Frame):
         #print(df[0].strip())
         # The translation replaces ; and , by space and dot.
         if skip>0 :
-            lbl=df[0].strip().split(';')
+            lbl=df[0].replace('#','').strip().split(';')
         else :
             lbl=None
         r = [lbl, array([
                         map(float,
                             ln.replace(';',' ').replace(',','.').split()) 
-                        for ln in df[skip:]]).T]
+                        for ln in df[skip:] if ln[0]!='#']).T]
         d=r[1]
         #print(d.shape)
         d[0]-=min(d[0])
@@ -543,11 +543,11 @@ class CanvasFrame(wx.Frame):
         return sel
 
     def exportData(self, fn):
-        hdr=' ; '.join(['%10s' % s for s in self.dat[0]])
+        hdr=' ;'.join([' %s' % s.strip() for s in self.dat[0]])
         sel=self.getSelected()
         if not sel is None :
             np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
-                            header=hdr, footer='', comments='')
+                            header=hdr, footer='', comments='#')
         else :
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
                             'Nothing to export!')
