@@ -317,10 +317,10 @@ class CustomToolbar(NavToolbar):
         
     def updateCanvas(self, redraw=True):
         if self.roi :
-            self.canvas.parentFrame.statbar.set_center(
-                self.roi.get_x()+self.roi.get_width()/2,
-                self.roi.get_y()+self.roi.get_height()/2
-            )
+            self.canvas.parentFrame.showROI(self.roi.get_x(),
+                                            self.roi.get_y(),
+                                            self.roi.get_width(),
+                                            self.roi.get_height())
             self.canvas.parentFrame.setWH(self.roi.get_width(),self.roi.get_height())
             if self.fixedSize :
                 self.selector.setSize(self.roi.get_width(),self.roi.get_height())
@@ -337,25 +337,12 @@ class StatusBar(wx.StatusBar):
     """
     def __init__(self, parent):
         wx.StatusBar.__init__(self, parent, -1)
-        self.SetFieldsCount(5)
+        self.SetFieldsCount(2)
         self.SetStatusText("None", 1)
-        self.SetStatusText("Center: None", 2)
-        self.SetStatusText("Area: None", 3)
-        self.SetStatusText("#Pts: None", 4)
         #self.Reposition()
 
     def set_function(self, string):
         self.SetStatusText("%s" % string, 1)
-
-    def set_center(self, x, y):
-        self.SetStatusText("Center: %.2f, %.2f um" % (x, y), 2)
-
-    def set_area(self, a):
-        self.SetStatusText("Area: %.2f um^2" % a, 3)
-
-    def set_number(self, n):
-        self.SetStatusText("#Pts: %d" % n, 4)
-        
 
 
 class CanvasFrame(wx.Frame):
@@ -419,7 +406,6 @@ class CanvasFrame(wx.Frame):
         
         # Build the parameters bar
         self.parbarSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sideBar = wx.BoxSizer(wx.VERTICAL)
         self.fixedSizeCB = wx.CheckBox(self, label='Fixed size', style=wx.ALIGN_RIGHT)
         self.parbarSizer.Add(self.fixedSizeCB,0, wx.CENTER | wx.LEFT)
         self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
@@ -440,11 +426,28 @@ class CanvasFrame(wx.Frame):
         self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
         self.parbarSizer.Add(wx.StaticText(self,label='  Title:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         self.parbarSizer.Add(self.titleCtrl, 0, wx.TOP | wx.LEFT)
-        self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
-        self.sizer.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
         
-        # Add plot canvas
-        self.sizer.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
+        # Build the side bar
+        self.sideBar = wx.BoxSizer(wx.VERTICAL)
+        self.areaDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.areaDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+        self.positionDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.positionDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+        self.numberDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.numberDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+
+        # Build the window
+        self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
+        
+        # Add plot canvas and sidebar
+        cont=wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(cont, 1, wx.TOP | wx.LEFT | wx.EXPAND)
+        cont.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
+        cont.AddSpacer(3)
+        cont.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
 
         # Add toolbar
         self.toolbar=self._get_toolbar(self.statbar)
@@ -491,6 +494,10 @@ class CanvasFrame(wx.Frame):
         self.titleCtrl.SetValue(self.filename)
         self.redrawPlot()
 
+        # Init sidebar
+        self.showPos()
+        self.showArea()
+        self.showNumber()
 
     def _get_toolbar(self, statbar):
         toolbar = CustomToolbar(self.canvas)
@@ -562,18 +569,31 @@ class CanvasFrame(wx.Frame):
         self.widthCtrl.SetMax(self.maxX-self.minX)
         self.heightCtrl.SetMax(self.maxY-self.minY)
         self.numPtsCtrl.SetRange(0,self.numPoints)
-        
+    
+    def showArea(self, a=0):
+        self.areaDSP.SetLabel('Area (um^2):  \n %-8g' % (a))
+    
+    def showPos(self, x=0, y=0):
+        self.positionDSP.SetLabel('Position (um):  \n X: %-8g\n Y: %-8g' % (x, y))
+    
+    def showNumber(self, n=0):
+        self.numberDSP.SetLabel('Selected points: \n %-d' % (n))
+    
+    def showROI(self, x, y, w, h):
+        self.showPos(x,y)
+        self.showArea(w*h)
+
     def setWH(self, w, h):
         self.widthCtrl.SetValue(w)
         self.heightCtrl.SetValue(h)
-        self.statbar.set_area(w*h)
+        self.showArea(w*h)
         try :
             self.numSelected=self.getSelected().shape[1]
         except AttributeError :
             self.numSelected=0
         if not self.fixedNumberCB.IsChecked() :
             self.numPtsCtrl.SetValue(self.numSelected)
-        self.statbar.set_number(self.numSelected)
+        self.showNumber(self.numSelected)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -671,6 +691,8 @@ class CanvasFrame(wx.Frame):
             self.numPtsCtrl.Disable()
             
     def updateROI(self, x, y, w, h):
+        self.showArea(w*h)
+        self.showPos(x,y)
         self.toolbar.updateROI(x,y,w,h)
         self.redrawPlot()
     
