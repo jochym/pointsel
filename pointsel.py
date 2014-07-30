@@ -473,8 +473,6 @@ class CanvasFrame(wx.Frame):
         self.SetSizer(self.sizer)
         self.Fit()
 
-#        self.displayData(self.dat[1],self.dat[0])
-
         # Read example data. To be removed in the future.
         try :
             self.datfn=sys.argv[1]
