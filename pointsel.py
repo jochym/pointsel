@@ -451,6 +451,7 @@ class CanvasFrame(wx.Frame):
         self.sideBar.AddSpacer(3)
         self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         
+        self.sideBar.AddSpacer(9)
         # Anchor switch
         self.anchorRB = wx.RadioBox(self, label='Anchor', 
                                     choices=['LT','L','LB','T','C','B','RT','R','RB'],
@@ -460,15 +461,18 @@ class CanvasFrame(wx.Frame):
         self.anchorRB.SetSelection(4)
         for i in [1,3,5,7] : self.anchorRB.ShowItem(i,False)
         self.anchorRB.Disable()
-        self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
         
-        # Zoom buttons
-        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.sideBar.AddSpacer(9)
+        # Flip buttons
+        box = wx.StaticBoxSizer(wx.StaticBox(self,label='Flip data:'),wx.HORIZONTAL)
         self.flipXBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_x.png'))
         self.flipYBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_y.png'))
+        box.Add(wx.StaticText(self,label='X:', style=wx.ALIGN_RIGHT), 0, wx.LEFT | wx.CENTER)
         box.Add(self.flipXBTN, 0, wx.TOP | wx.LEFT)
+        box.Add(wx.StaticText(self,label=' Y:', style=wx.ALIGN_RIGHT), 0, wx.LEFT | wx.CENTER)
         box.Add(self.flipYBTN, 0, wx.TOP | wx.LEFT)
-        self.sideBar.Add(box, 0, wx.TOP | wx.CENTER)
+        self.sideBar.Add(box, 1, wx.LEFT | wx.EXPAND)
         
         # Build the window
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
@@ -753,8 +757,9 @@ class CanvasFrame(wx.Frame):
         self.redrawPlot()
 
     def onAnchorChange(self, ev):
-        s=self.anchorRB.GetSelection()
-        print(self.anchorRB.GetString(s))
+        pass
+        #s=self.anchorRB.GetSelection()
+        #print(self.anchorRB.GetString(s))
 
     def _shift_to_origin(self, d=None):
         if d is None :
@@ -846,7 +851,7 @@ class CanvasFrame(wx.Frame):
                 'RB': optfunRB,
                 'RT': optfunRT }
 
-        print(fp)
+        #print(fp)
         d=self.dat[1]
         minW=0
         maxW=2*max(self.maxX-self.minX,self.maxY-self.minY)
