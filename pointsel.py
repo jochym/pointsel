@@ -458,6 +458,8 @@ class CanvasFrame(wx.Frame):
                                     style= wx.RA_SPECIFY_ROWS)
         # Center is default
         self.anchorRB.SetSelection(4)
+        for i in [1,3,5,7] : self.anchorRB.ShowItem(i,False)
+        self.anchorRB.Disable()
         self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT)
         
         # Zoom buttons
@@ -715,12 +717,14 @@ class CanvasFrame(wx.Frame):
                 self.fixedNumberCB.SetValue(False)
                 return
             self.numPtsCtrl.Enable()
+            self.anchorRB.Enable()
             self.fixedSizeCB.SetValue(True)
             self.targetSelected=self.numPtsCtrl.GetValue()
             self.onFixedSize(ev)
             self.handleROIforN()
         else :
             self.numPtsCtrl.Disable()
+            self.anchorRB.Disable()
             
     def updateROI(self, x, y, w, h):
         self.showArea(w*h)
@@ -787,20 +791,20 @@ class CanvasFrame(wx.Frame):
         x,y=self.toolbar.roi.get_xy()
         w=self.toolbar.roi.get_width()
         h=self.toolbar.roi.get_height()
-        cx, cy= x+w/2, y+h/2
-        ncx, ncy, tw=self.findROIforN(cx,cy,n)
+        ncx, ncy, tw=self.findROIforN(x, y, w, h, n,
+                        self.anchorRB.GetString(self.anchorRB.GetSelection()))
         #print('ROIforN:',cx,cy,tw)
-        self.updateROI(ncx-tw/2,ncy-tw/2,tw,tw)
+        self.updateROI(ncx,ncy,tw,tw)
         self.setWH(tw,tw)
 
-    def findROIforN(self, cx, cy, n):
+    def findROIforN(self, x, y, w, h, n, fp='C'):
         '''
         Find the squere ROI around target point (cx, cy) containing 
         as close as possible to target number of points (n). 
         The function does not care about the GUI. Just the computation.
         '''
         
-        def optfun(w, x, y, d):
+        def optfunC(w, x, y, d):
             hw=w/2
             l=x-hw
             b=y-hw
@@ -808,14 +812,77 @@ class CanvasFrame(wx.Frame):
             t=y+hw
             return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
             
+        def optfunLB(w, x, y, d):
+            l=x
+            b=y
+            r=x+w
+            t=y+w
+            return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
+
+        def optfunLT(w, x, y, d):
+            l=x
+            b=y-w
+            r=x+w
+            t=y
+            return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
+
+        def optfunRT(w, x, y, d):
+            l=x-w
+            b=y-w
+            r=x
+            t=y
+            return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
+
+        def optfunRB(w, x, y, d):
+            l=x-w
+            b=y
+            r=x
+            t=y+w
+            return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
+
+        optfun={'C': optfunC,
+                'LB': optfunLB,
+                'LT': optfunLT,
+                'RB': optfunRB,
+                'RT': optfunRT }
+
+        print(fp)
         d=self.dat[1]
         minW=0
         maxW=2*max(self.maxX-self.minX,self.maxY-self.minY)
+        if fp=='C' :
+            cx=x+w/2 ; cy=y+h/2
+        elif fp=='LB' :
+            cx=x ; cy=y
+        elif fp=='LT' :
+            cx=x ; cy=y+h
+        elif fp=='RT' :
+            cx=x+w ; cy=y+h
+        elif fp=='RB' :
+            cx=x+w ; cy=y
+        else :
+            print('This should not happen! Inform the author')
+
         cx=min(cx,self.maxX)
         cx=max(cx,self.minX)
         cy=min(cy,self.maxY)
         cy=max(cy,self.minY)
-        return cx, cy, bisect(optfun, minW, maxW, args=(cx,cy, d), xtol=10e-12)
+        
+        nw=bisect(optfun[fp], minW, maxW, args=(cx,cy, d), xtol=10e-12)
+        
+        if fp=='C' :
+            cx-=nw/2 ; cy-=nw/2
+        elif fp=='LB' :
+            pass
+        elif fp=='LT' :
+            cy-=nw
+        elif fp=='RT' :
+            cx-=nw ; cy-=nw
+        elif fp=='RB' :
+            cx-=nw 
+        else :
+            print('This should not happen! Inform the author')
+        return cx, cy, nw
 
 class App(wx.App):
 
