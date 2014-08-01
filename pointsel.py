@@ -354,7 +354,7 @@ class CanvasFrame(wx.Frame):
         self.dirname=''
         self.filename=''
         self.SetBackgroundColour(wx.NamedColour("WHITE"))
-        self.SetFont(wx.Font(15 if wx.Platform == '__WXMAC__' else 11, 
+        self.SetFont(wx.Font(18 if wx.Platform == '__WXMAC__' else 11, 
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
 
 
@@ -460,6 +460,14 @@ class CanvasFrame(wx.Frame):
         self.anchorRB.SetSelection(4)
         self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT)
         
+        # Zoom buttons
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.flipXBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_x.png'))
+        self.flipYBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_y.png'))
+        box.Add(self.flipXBTN, 0, wx.TOP | wx.LEFT)
+        box.Add(self.flipYBTN, 0, wx.TOP | wx.LEFT)
+        self.sideBar.Add(box, 0, wx.TOP | wx.CENTER)
+        
         # Build the window
         self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
@@ -482,7 +490,9 @@ class CanvasFrame(wx.Frame):
         self.numPtsCtrl.Bind(wx.EVT_SPINCTRL, self.onNumberChange)
         self.titleCtrl.Bind(wx.EVT_TEXT, self.onTitleChange)
         self.anchorRB.Bind(wx.EVT_RADIOBOX, self.onAnchorChange)
-                
+        self.flipXBTN.Bind(wx.EVT_BUTTON, self.onFlipX)
+        self.flipYBTN.Bind(wx.EVT_BUTTON, self.onFlipY)
+        
         if self.toolbar is not None:
             self.toolbar.Realize()
             # Default window size is incorrect, so set
@@ -552,14 +562,7 @@ class CanvasFrame(wx.Frame):
                         for ln in df[skip:] if ln[0]!='#']).T]
         d=r[1]
         #print(d.shape)
-        d[0]-=min(d[0])
-        d[1]-=min(d[1])
-        self.minX=0
-        self.minY=0
-        self.maxX=max(d[0])
-        self.maxY=max(d[1])
-        self.numPoints = d.shape[1]
-        self.setLimits()
+        self._shift_to_origin(d)
         return r
 
     def getSelected(self, lrbt=None):
@@ -748,6 +751,30 @@ class CanvasFrame(wx.Frame):
     def onAnchorChange(self, ev):
         s=self.anchorRB.GetSelection()
         print(self.anchorRB.GetString(s))
+
+    def _shift_to_origin(self, d=None):
+        if d is None :
+            d=self.dat[1]
+        d[0]-=min(d[0])
+        d[1]-=min(d[1])
+        self.minX=0
+        self.minY=0
+        self.maxX=max(d[0])
+        self.maxY=max(d[1])
+        self.numPoints = d.shape[1]
+        self.setLimits()
+
+    def onFlipX(self, ev):
+        self.dat[1][0]=-self.dat[1][0]
+        self._shift_to_origin()
+        self.plot.set_xdata(self.dat[1][0])
+        self.toolbar.updateCanvas()
+
+    def onFlipY(self, ev):
+        self.dat[1][1]=-self.dat[1][1]
+        self._shift_to_origin()
+        self.plot.set_ydata(self.dat[1][1])
+        self.toolbar.updateCanvas()
 
     def handleROIforN(self):
         '''
