@@ -163,7 +163,7 @@ class CustomToolbar(NavToolbar):
         self.selector = RectSelector(self.canvas.figure.axes[0], 
                             self.onSelect, button=[1,3], # don't use middle button
                              minspanx=5, minspany=5)
-        self.selector.set_active(False)
+        self.selector.set_active(True)
         self.ax=self.canvas.figure.axes[0]
         self.roi=None
         self.fixedSize=False
@@ -195,6 +195,7 @@ class CustomToolbar(NavToolbar):
                                   text, tooltip_text)
             bind(self, wx.EVT_TOOL, getattr(self, callback), id=self.wx_ids[text])
 
+        self.ToggleTool(self.wx_ids['ROI'], True)
         self.Realize()
 
     def _set_markers(self):
@@ -616,6 +617,14 @@ class CanvasFrame(wx.Frame):
     def exportData(self, fn):
         hdr=' ;'.join([' %s' % s.strip() for s in self.dat[0]])
         sel=self.getSelected()
+        #try :
+        x, y = self.toolbar.roi.get_xy()
+        w = self.toolbar.roi.get_width()
+        h = self.toolbar.roi.get_height()
+        hdr += '\n'
+        hdr += ' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d ' % (x, y, w,h, sel.shape[1])
+        #except AttributeError :
+        #    pass
         if not sel is None :
             np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
                             header=hdr, footer='', comments='#')
