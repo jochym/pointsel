@@ -938,6 +938,9 @@ class App(wx.App):
         return True
 
 
+    def MacOpenFile(self, filename):
+        print(filename)
+
 if __name__ == '__main__':
 
 
