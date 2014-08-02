@@ -302,7 +302,11 @@ class CustomToolbar(NavToolbar):
             x=self.roi.get_x()
             w=self.roi.get_width()
             nw=ev.GetValue()
-            self.roi.set_x(x+(w-nw)/2)
+            dw = {  'C': (w-nw)/2,
+                    'L': 0,
+                    'R': w-nw
+                }[self.canvas.parentFrame.anchorRB.GetStringSelection()[0]]
+            self.roi.set_x(x+dw)
             self.roi.set_width(nw)
             self.updateCanvas()
 
@@ -311,7 +315,11 @@ class CustomToolbar(NavToolbar):
             y=self.roi.get_y()
             h=self.roi.get_height()
             nh=ev.GetValue()
-            self.roi.set_y(y+(h-nh)/2)
+            dh = {  'C': (h-nh)/2,
+                    'B': 0,
+                    'T': h-nh
+                }[self.canvas.parentFrame.anchorRB.GetStringSelection()[-1]]
+            self.roi.set_y(y+dh)
             self.roi.set_height(nh)
             self.updateCanvas()
         
@@ -407,28 +415,6 @@ class CanvasFrame(wx.Frame):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         
-        # Build the parameters bar
-        self.parbarSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.fixedSizeCB = wx.CheckBox(self, label='Fixed size', style=wx.ALIGN_RIGHT)
-        self.parbarSizer.Add(self.fixedSizeCB,0, wx.CENTER | wx.LEFT)
-        self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
-        self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
-        self.widthCtrl.SetDigits(2)
-        self.heightCtrl.SetDigits(2)
-        self.titleCtrl = wx.TextCtrl(self, value='', size=(200,-1))
-        self.parbarSizer.Add(wx.StaticText(self,label='  W: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.parbarSizer.Add(self.widthCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label='um   H: ', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.parbarSizer.Add(self.heightCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label=' um', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.parbarSizer.Add(wx.StaticText(self,label='  #Points', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.fixedNumberCB = wx.CheckBox(self, style=wx.ALIGN_LEFT)
-        self.parbarSizer.Add(self.fixedNumberCB,0, wx.CENTER | wx.LEFT)
-        self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
-        self.numPtsCtrl.Disable()
-        self.parbarSizer.Add(self.numPtsCtrl, 0, wx.TOP | wx.LEFT)
-        self.parbarSizer.Add(wx.StaticText(self,label='  Title:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        self.parbarSizer.Add(self.titleCtrl, 0, wx.TOP | wx.LEFT)
         
         # Build the side bar
         self.sideBar = wx.BoxSizer(wx.VERTICAL)
@@ -452,15 +438,53 @@ class CanvasFrame(wx.Frame):
         self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         
         self.sideBar.AddSpacer(9)
+
+        self.titleCtrl = wx.TextCtrl(self, value='', size=(120,-1))
+        self.sideBar.Add(wx.StaticText(self,label='Title:', style=wx.ALIGN_LEFT), 0, wx.LEFT)
+        self.sideBar.Add(self.titleCtrl, 0, wx.EXPAND)
+        
+        self.sideBar.AddSpacer(5)
+
+        self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
+        self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
+        self.widthCtrl.SetDigits(2)
+        self.heightCtrl.SetDigits(2)
+        self.fixedSizeCB = wx.CheckBox(self, label='Fixed size', style=wx.ALIGN_LEFT)
+
+        box = wx.StaticBoxSizer(wx.StaticBox(self,label='Size (um):'),wx.VERTICAL)
+        box.Add(self.fixedSizeCB,0, wx.LEFT)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(wx.StaticText(self,label='W:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        hbox.Add(self.widthCtrl, 0, wx.EXPAND | wx.LEFT)
+        box.Add(hbox, 1, wx.EXPAND)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(wx.StaticText(self,label='H:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        hbox.Add(self.heightCtrl, 0, wx.EXPAND | wx.LEFT)
+        box.Add(hbox, 1, wx.EXPAND)
+        self.sideBar.Add(box, 1, wx.LEFT | wx.EXPAND)
+        
+        self.sideBar.AddSpacer(5)
+
+        self.fixedNumberCB = wx.CheckBox(self, label='Fixed nr.', style=wx.ALIGN_LEFT)
+        self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
+        self.numPtsCtrl.Disable()
+        box = wx.StaticBoxSizer(wx.StaticBox(self,label='# Points:'),wx.VERTICAL)
+        box.Add(self.fixedNumberCB,0, wx.LEFT)
+        box.Add(self.numPtsCtrl, 0, wx.EXPAND)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        box.Add(hbox, 1, wx.EXPAND)
+        self.sideBar.Add(box, 0, wx.LEFT | wx.EXPAND)
+
+        self.sideBar.AddSpacer(5)
+
         # Anchor switch
-        self.anchorRB = wx.RadioBox(self, label='Anchor', 
+        self.anchorRB = wx.RadioBox(self, label='Anchor:', 
                                     choices=['LT','L','LB','T','C','B','RT','R','RB'],
                                     majorDimension=3,
                                     style= wx.RA_SPECIFY_ROWS)
         # Center is default
         self.anchorRB.SetSelection(4)
         for i in [1,3,5,7] : self.anchorRB.ShowItem(i,False)
-        self.anchorRB.Disable()
         self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
         
         self.sideBar.AddSpacer(9)
@@ -468,14 +492,13 @@ class CanvasFrame(wx.Frame):
         box = wx.StaticBoxSizer(wx.StaticBox(self,label='Flip data:'),wx.HORIZONTAL)
         self.flipXBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_x.png'))
         self.flipYBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_y.png'))
-        box.Add(wx.StaticText(self,label='X:', style=wx.ALIGN_RIGHT), 0, wx.LEFT | wx.CENTER)
-        box.Add(self.flipXBTN, 0, wx.TOP | wx.LEFT)
-        box.Add(wx.StaticText(self,label=' Y:', style=wx.ALIGN_RIGHT), 0, wx.LEFT | wx.CENTER)
-        box.Add(self.flipYBTN, 0, wx.TOP | wx.LEFT)
-        self.sideBar.Add(box, 1, wx.LEFT | wx.EXPAND)
+        box.Add(wx.StaticText(self,label='X:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
+        box.Add(self.flipXBTN, 0, wx.LEFT)
+        box.Add(wx.StaticText(self,label=' Y:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
+        box.Add(self.flipYBTN, 0, wx.LEFT)
+        self.sideBar.Add(box, 0, wx.LEFT | wx.EXPAND)
         
         # Build the window
-        self.sizer.Add(self.parbarSizer, 0, wx.TOP | wx.LEFT)
         
         # Add plot canvas and sidebar
         cont=wx.BoxSizer(wx.HORIZONTAL)
@@ -721,14 +744,12 @@ class CanvasFrame(wx.Frame):
                 self.fixedNumberCB.SetValue(False)
                 return
             self.numPtsCtrl.Enable()
-            self.anchorRB.Enable()
             self.fixedSizeCB.SetValue(True)
             self.targetSelected=self.numPtsCtrl.GetValue()
             self.onFixedSize(ev)
             self.handleROIforN()
         else :
             self.numPtsCtrl.Disable()
-            self.anchorRB.Disable()
             
     def updateROI(self, x, y, w, h):
         self.showArea(w*h)
