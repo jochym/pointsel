@@ -617,20 +617,22 @@ class CanvasFrame(wx.Frame):
     def exportData(self, fn):
         hdr=' ;'.join([' %s' % s.strip() for s in self.dat[0]])
         sel=self.getSelected()
-        #try :
-        x, y = self.toolbar.roi.get_xy()
-        w = self.toolbar.roi.get_width()
-        h = self.toolbar.roi.get_height()
-        hdr += '\n'
-        hdr += ' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d ' % (x, y, w,h, sel.shape[1])
-        #except AttributeError :
-        #    pass
-        if not sel is None :
-            np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
-                            header=hdr, footer='', comments='#')
-        else :
+        try :
+            x, y = self.toolbar.roi.get_xy()
+            w = self.toolbar.roi.get_width()
+            h = self.toolbar.roi.get_height()
+            hdr += '\n'
+            hdr += ' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d ' % (x, y, w,h, sel.shape[1])
+        except AttributeError :
+            # No roi 
+            pass
+        if sel is None :
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
                             'Nothing to export!')
+        else :
+            np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
+                header=hdr, footer='', comments='#')
+
 
     def setLimits(self):
         self.widthCtrl.SetMax(self.maxX-self.minX)
