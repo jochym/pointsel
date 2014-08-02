@@ -10,7 +10,7 @@ from __future__ import division, print_function
 from numpy import array
 import numpy as np
 from scipy.optimize import bisect
-import sys, os
+import sys, os, math
 import matplotlib
 import wxversion
 wxversion.ensureMinimal('2.8')
@@ -543,7 +543,8 @@ class CanvasFrame(wx.Frame):
             self.datfn=sys.argv[1]
         except IndexError :
             # Example data
-            self.datfn='data/A339-SiC-560-1-SiC-WDS.txt'
+            #self.datfn='data/A339-SiC-560-1-SiC-WDS.txt'
+            pass
 
         try :
             self.dirname, self.filename=os.path.split(self.datfn)
@@ -551,7 +552,8 @@ class CanvasFrame(wx.Frame):
             self.displayData(self.dat[1],self.dat[0])
             self.axes.set_title(self.filename)
         except IOError :
-            print('Warning: Cannot open file ', self.datfn)
+            if self.datfn!='' :
+                print('Warning: Cannot open file ', self.datfn)
         
         self.titleCtrl.SetValue(self.filename)
         self.redrawPlot()
@@ -894,7 +896,12 @@ class CanvasFrame(wx.Frame):
         cy=min(cy,self.maxY)
         cy=max(cy,self.minY)
         
-        nw=bisect(optfun[fp], minW, maxW, args=(cx,cy, d), xtol=10e-12)
+        try :
+            nw=bisect(optfun[fp], minW, maxW, args=(cx,cy, d), xtol=10e-12)
+        except ValueError :
+            #wx.MessageBox('Cannot find a good solution for the selection box. ', 
+            #                'Solver error!')
+            return x, y, math.sqrt(w*h)
         
         if fp=='C' :
             cx-=nw/2 ; cy-=nw/2
