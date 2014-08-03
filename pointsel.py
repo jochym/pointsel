@@ -725,7 +725,7 @@ class CanvasFrame(wx.Frame):
                 self.toolbar._positions.clear()
                 self.toolbar.push_current()
                 self.redrawPlot()
-            except IndexError :
+            except (IOError, IndexError, ValueError) as ex :
                 wx.MessageBox('The data from:\n\n' 
                               + self.datfn 
                               + '\n\ncould not be read properly.'
