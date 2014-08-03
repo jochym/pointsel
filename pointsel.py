@@ -715,15 +715,22 @@ class CanvasFrame(wx.Frame):
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
             self.datfn=os.path.join(self.dirname, self.filename)
-            self.dat=self.readData(self.datfn)
-            self.displayData(self.dat[1],self.dat[0])
-            self.updateROI(0,0,self.maxX,self.maxY)
-            self.axes.set_xlim(0,self.maxX)
-            self.axes.set_ylim(0,self.maxY)
-            self.toolbar._views.clear()
-            self.toolbar._positions.clear()
-            self.toolbar.push_current()
-            self.redrawPlot()
+            try :
+                self.dat=self.readData(self.datfn)
+                self.displayData(self.dat[1],self.dat[0])
+                self.updateROI(0,0,self.maxX,self.maxY)
+                self.axes.set_xlim(0,self.maxX)
+                self.axes.set_ylim(0,self.maxY)
+                self.toolbar._views.clear()
+                self.toolbar._positions.clear()
+                self.toolbar.push_current()
+                self.redrawPlot()
+            except IndexError :
+                wx.MessageBox('The data from:\n\n' 
+                              + self.datfn 
+                              + '\n\ncould not be read properly.'
+                              + '\nProbably the format is incorrect.', 
+                              'Error reading data')
         dlg.Destroy()
 
     def onPaint(self, event):
