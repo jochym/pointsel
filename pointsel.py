@@ -362,6 +362,7 @@ class CanvasFrame(wx.Frame):
 
         self.dirname=''
         self.filename=''
+        self.exdirname=None
         self.SetBackgroundColour(wx.NamedColour("WHITE"))
         self.SetFont(wx.Font(18 if wx.Platform == '__WXMAC__' else 11, 
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
@@ -630,7 +631,11 @@ class CanvasFrame(wx.Frame):
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
                             'Nothing to export!')
         else :
-            np.savetxt(fn, sel.T, fmt='%.3f', delimiter=' ', newline='\n', 
+            d=array(sel)
+            # Shift exported data to the origin
+            d[0]-=min(d[0])
+            d[1]-=min(d[1])
+            np.savetxt(fn, d.T, fmt='%.3f', delimiter=' ', newline='\n', 
                 header=hdr, footer='', comments='#')
 
 
@@ -738,7 +743,9 @@ class CanvasFrame(wx.Frame):
 
     def onExport(self, e):
         '''Export the selected points'''
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "*.txt", 
+        if self.exdirname is None :
+            self.exdirname = self.dirname
+        dlg = wx.FileDialog(self, "Choose a file", self.exdirname, "*.txt", 
                                 "Data file (*.txt)|*.txt|"+
                                 "Data file (*.dat)|*.dat|"+
                                 "All files (*.*)|*.*", 
@@ -747,8 +754,8 @@ class CanvasFrame(wx.Frame):
             # The file name is local here.
             # We are saving a selection not the data.
             filename = dlg.GetFilename()
-            dirname = dlg.GetDirectory()
-            self.exportData(os.path.join(dirname, filename))
+            self.exdirname = dlg.GetDirectory()
+            self.exportData(os.path.join(self.exdirname, filename))
         dlg.Destroy()
 
     def onFixedSize(self, ev):
