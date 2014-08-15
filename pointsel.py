@@ -393,6 +393,7 @@ class CanvasFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onAbout, menuAbout)
 
         self.numSelected = 0
+        self.conc = 0
         self.targetSelected = 0
         self.numPoints = 0
         self.figure = Figure(figsize=(10,10))
@@ -436,6 +437,9 @@ class CanvasFrame(wx.Frame):
         self.sideBar.AddSpacer(3)
         self.numberDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.numberDSP, 0, wx.BOTTOM | wx.LEFT)
+        self.sideBar.AddSpacer(3)
+        self.concDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.sideBar.Add(self.concDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
         self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         
@@ -561,10 +565,11 @@ class CanvasFrame(wx.Frame):
         self.redrawPlot()
 
         # Init sidebar
-        self.showPos()
+        self.showLTRB()
         self.showWH()
         self.showArea()
         self.showNumber()
+        self.showConc()
 
     def _get_toolbar(self, statbar):
         toolbar = CustomToolbar(self.canvas)
@@ -647,8 +652,8 @@ class CanvasFrame(wx.Frame):
     def showArea(self, a=0):
         self.areaDSP.SetLabel('Area (um^2):  \n %-8g' % (a))
     
-    def showPos(self, x=0, y=0):
-        self.positionDSP.SetLabel(u'Position (um):  \n X: %-8g\n Y: %-8g' % (x, y))
+    def showLTRB(self, l=0, t=0, r=0, b=0):
+        self.positionDSP.SetLabel(u'Position (um):  \n L: %-8g\n T: %-8g\n R: %-8g\n B: %-8g' % (l,t,r,b))
 
     def showWH(self, w=0, h=0):
         self.whDSP.SetLabel('Size (um):  \n W: %-8g\n H: %-8g' % (w, h))
@@ -656,8 +661,11 @@ class CanvasFrame(wx.Frame):
     def showNumber(self, n=0):
         self.numberDSP.SetLabel('Selected pnts: \n %-d' % (n))
     
+    def showConc(self, g=0):
+        self.concDSP.SetLabel('Concentration: \n %.3f' % (g))
+    
     def showROI(self, x, y, w, h):
-        self.showPos(x,y)
+        self.showLTRB(l=x,t=y+h,r=x+w,b=y)
         self.showArea(w*h)
         self.showWH(w,h)
 
@@ -667,12 +675,16 @@ class CanvasFrame(wx.Frame):
         self.showArea(w*h)
         self.showWH(w,h)
         try :
-            self.numSelected=self.getSelected().shape[1]
+            sel=self.getSelected()
+            self.numSelected=sel.shape[1]
+            self.conc=sum(sel[2])/(w*h)
         except AttributeError :
             self.numSelected=0
+            self.conc=0.0
         if not self.fixedNumberCB.IsChecked() :
             self.numPtsCtrl.SetValue(self.numSelected)
         self.showNumber(self.numSelected)
+        self.showConc(self.conc)
 
     def displayData(self, dat, lbl=None, cols=(0,1)):
         '''
@@ -780,7 +792,7 @@ class CanvasFrame(wx.Frame):
             
     def updateROI(self, x, y, w, h):
         self.showArea(w*h)
-        self.showPos(x,y)
+        self.showLTRB(l=x,t=y+h,r=x+w,b=y)
         self.toolbar.updateROI(x,y,w,h)
         self.redrawPlot()
     
