@@ -504,6 +504,13 @@ class CanvasFrame(wx.Frame):
         box.Add(self.flipYBTN, 0, wx.LEFT)
         self.sideBar.Add(box, 0, wx.LEFT | wx.EXPAND)
         
+        self.sideBar.AddSpacer(9)
+        # Aspect ratio switch
+        self.aspectRB = wx.RadioBox(self, label='Aspect ratio:', 
+                                    choices=['auto','equal'],)
+        # Auto is default
+        self.aspectRB.SetSelection(0)
+        self.sideBar.Add(self.aspectRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
         # Build the window
         
         # Add plot canvas and sidebar
@@ -527,6 +534,7 @@ class CanvasFrame(wx.Frame):
         self.anchorRB.Bind(wx.EVT_RADIOBOX, self.onAnchorChange)
         self.flipXBTN.Bind(wx.EVT_BUTTON, self.onFlipX)
         self.flipYBTN.Bind(wx.EVT_BUTTON, self.onFlipY)
+        self.aspectRB.Bind(wx.EVT_RADIOBOX, self.onAspectChange)
         
         if self.toolbar is not None:
             self.toolbar.Realize()
@@ -845,6 +853,14 @@ class CanvasFrame(wx.Frame):
         self._shift_to_origin()
         self.plot.set_ydata(self.dat[1][1])
         self.toolbar.updateCanvas()
+
+    def onAspectChange(self, ev):
+        s=self.aspectRB.GetString(self.aspectRB.GetSelection())
+        self.axes.set_aspect(s,'datalim')
+        if s=='auto':
+            self.axes.set_xlim(0,self.maxX)
+            self.axes.set_ylim(0,self.maxY)
+        self.redrawPlot()
 
     def handleROIforN(self):
         '''
