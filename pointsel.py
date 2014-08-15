@@ -628,7 +628,8 @@ class CanvasFrame(wx.Frame):
             w = self.toolbar.roi.get_width()
             h = self.toolbar.roi.get_height()
             hdr += '\n'
-            hdr += ' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d ' % (x, y, w,h, sel.shape[1])
+            hdr += (' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d   Concentration=%g' 
+                        % (x, y, w,h, sel.shape[1],sum(sel[2])/(w*h)) )
         except AttributeError :
             # No roi 
             pass
@@ -678,6 +679,7 @@ class CanvasFrame(wx.Frame):
             sel=self.getSelected()
             self.numSelected=sel.shape[1]
             self.conc=sum(sel[2])/(w*h)
+            print(sel[2].shape)
         except AttributeError :
             self.numSelected=0
             self.conc=0.0
