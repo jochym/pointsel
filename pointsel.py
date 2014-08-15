@@ -679,7 +679,6 @@ class CanvasFrame(wx.Frame):
             sel=self.getSelected()
             self.numSelected=sel.shape[1]
             self.conc=sum(sel[2])/(w*h)
-            print(sel[2].shape)
         except AttributeError :
             self.numSelected=0
             self.conc=0.0
