@@ -18,7 +18,7 @@ matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavToolbar
-from matplotlib.backends.backend_wx import _load_bitmap, bind, StatusBarWx
+from matplotlib.backends.backend_wx import _load_bitmap, StatusBarWx
 
 from matplotlib.figure import Figure
 from matplotlib.widgets import RectangleSelector
@@ -29,6 +29,8 @@ from matplotlib import rcParams
 import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+version = "1.0.1"
 
 rcParams['savefig.format']='tif'
 
@@ -193,7 +195,7 @@ class CustomToolbar(NavToolbar):
             else:
                self.AddSimpleTool(self.wx_ids[text], bitmap,
                                   text, tooltip_text)
-            bind(self, wx.EVT_TOOL, getattr(self, callback), id=self.wx_ids[text])
+            self.Bind(wx.EVT_TOOL, getattr(self, callback), id=self.wx_ids[text])
 
         self.ToggleTool(self.wx_ids['ROI'], True)
         self.Realize()
@@ -727,7 +729,9 @@ class CanvasFrame(wx.Frame):
 
     def onAbout(self,e):
         # Create a message dialog box
-        dlg = wx.MessageDialog(self, "A data point selector", "About PointSel", wx.OK)
+        dlg = wx.MessageDialog(self, 
+                                "ROI selector\nVersion %s" % (version), 
+                                "About PointSel", wx.OK)
         dlg.ShowModal() # Shows it
         dlg.Destroy() # finally destroy it when finished.
 
