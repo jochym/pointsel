@@ -54,3 +54,6 @@ docs/_build/
 
 # Editor backups
 *~
+
+# OSX fs
+.DS_Store
