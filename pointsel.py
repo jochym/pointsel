@@ -364,7 +364,7 @@ class CanvasFrame(wx.Frame):
         self.filename=''
         self.exdirname=None
         self.SetBackgroundColour(wx.Colour("WHITE"))
-        self.SetFont(wx.Font(18 if wx.Platform == '__WXMAC__' else 11, 
+        self.SetFont(wx.Font(12 if wx.Platform == '__WXMAC__' else 11, 
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
 
 
