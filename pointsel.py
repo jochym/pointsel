@@ -12,8 +12,7 @@ import numpy as np
 from scipy.optimize import bisect
 import sys, os, math
 import matplotlib
-import wxversion
-wxversion.ensureMinimal('2.8')
+
 matplotlib.use('WXAgg')
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -30,7 +29,7 @@ import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-version = "1.0.1"
+version = "1.0.2"
 
 rcParams['savefig.format']='tif'
 
@@ -190,11 +189,10 @@ class CustomToolbar(NavToolbar):
             except IOError :
                 bitmap=wx.Bitmap(image_file + '.png')
             if text in ['Pan', 'Zoom', 'ROI']:
-               self.AddCheckTool(self.wx_ids[text], bitmap,
+               self.AddCheckTool(self.wx_ids[text], text, bitmap,
                                  shortHelp=text, longHelp=tooltip_text)
             else:
-               self.AddSimpleTool(self.wx_ids[text], bitmap,
-                                  text, tooltip_text)
+               self.AddTool(self.wx_ids[text], text, bitmap, tooltip_text)
             self.Bind(wx.EVT_TOOL, getattr(self, callback), id=self.wx_ids[text])
 
         self.ToggleTool(self.wx_ids['ROI'], True)
@@ -365,7 +363,7 @@ class CanvasFrame(wx.Frame):
         self.dirname=''
         self.filename=''
         self.exdirname=None
-        self.SetBackgroundColour(wx.NamedColour("WHITE"))
+        self.SetBackgroundColour(wx.Colour("WHITE"))
         self.SetFont(wx.Font(18 if wx.Platform == '__WXMAC__' else 11, 
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
 
@@ -542,8 +540,8 @@ class CanvasFrame(wx.Frame):
             self.toolbar.Realize()
             # Default window size is incorrect, so set
             # toolbar width to figure width.
-            tw, th = self.toolbar.GetSizeTuple()
-            fw, fh = self.canvas.GetSizeTuple()
+            tw, th = self.toolbar.GetSize()
+            fw, fh = self.canvas.GetSize()
             # By adding toolbar in sizer, we are able to put it at the bottom
             # of the frame - so appearance is closer to GTK version.
             self.toolbar.SetSize(wx.Size(fw, th))
@@ -651,7 +649,7 @@ class CanvasFrame(wx.Frame):
             # Shift exported data to the origin
             d[0]-=min(d[0])
             d[1]-=min(d[1])
-            np.savetxt(fn, d.T, fmt='%.3f', delimiter=' ', newline='\n', 
+            np.savetxt(fn, d.T, fmt='%11.3f', delimiter=' ', newline='\n', 
                 header=hdr, footer='', comments='#')
 
 
@@ -740,7 +738,7 @@ class CanvasFrame(wx.Frame):
 
     def onOpen(self,e):
         """ Open a file"""
-        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.OPEN)
+        dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
@@ -751,8 +749,7 @@ class CanvasFrame(wx.Frame):
                 self.updateROI(0,0,self.maxX,self.maxY)
                 self.axes.set_xlim(0,self.maxX)
                 self.axes.set_ylim(0,self.maxY)
-                self.toolbar._views.clear()
-                self.toolbar._positions.clear()
+                self.toolbar.update()
                 self.toolbar.push_current()
                 self.redrawPlot()
             except (IOError, IndexError, ValueError) as ex :
@@ -774,7 +771,7 @@ class CanvasFrame(wx.Frame):
                                 "Data file (*.txt)|*.txt|"+
                                 "Data file (*.dat)|*.dat|"+
                                 "All files (*.*)|*.*", 
-                                wx.SAVE|wx.FD_OVERWRITE_PROMPT)
+                                wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
             # We are saving a selection not the data.
