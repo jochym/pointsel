@@ -29,7 +29,7 @@ import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-version = "1.0.2"
+version = "1.0.3"
 
 rcParams['savefig.format']='tif'
 
@@ -596,18 +596,18 @@ class CanvasFrame(wx.Frame):
         of labels (split on ;).
         '''
         df=open(fn).readlines()
+        #print(df)
         #print(df[0].strip())
         # The translation replaces ; and , by space and dot.
         if skip>0 :
             lbl=df[0].replace('#','').strip().split(';')
         else :
             lbl=None
-        r = [lbl, array([
-                        map(float,
-                            ln.replace(';',' ').replace(',','.').split()) 
-                        for ln in df[skip:] if ln[0]!='#']).T]
+        r = [lbl, array([[float(v) 
+                            for v in  ln.replace(';',' ').replace(',','.').split()]
+                                for ln in df[skip:] if ln[0]!='#' and ln.split()]).T]
         d=r[1]
-        #print(d.shape)
+        #print(d, d.shape)
         self._shift_to_origin(d)
         return r
 
