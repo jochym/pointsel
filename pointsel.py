@@ -371,13 +371,13 @@ class CanvasFrame(wx.Frame):
         # Setting up the menu.
         filemenu= wx.Menu()
         menuOpen = filemenu.Append(wx.ID_OPEN, 
-                    "&Open"," Open a data file")
+                    "&Open\tCTRL+O"," Open a data file")
         menuExport = filemenu.Append(wx.ID_SAVE, 
-                    "&Export selection"," Export selected data to a file.")
+                    "&Export selection\tCTRL+E"," Export selected data to a file.")
         menuAbout= filemenu.Append(wx.ID_ABOUT, 
-                    "&About"," Information about this program")
+                    "About"," Information about this program")
         menuExit = filemenu.Append(wx.ID_EXIT,
-                    "E&xit"," Terminate the program")
+                    "E&xit\tCTRL+X"," Terminate the program")
 
         # Creating the menubar.
         menuBar = wx.MenuBar()
