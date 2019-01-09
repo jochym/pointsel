@@ -358,12 +358,12 @@ class CanvasFrame(wx.Frame):
 
     def __init__(self):
         wx.Frame.__init__(self,None,-1,
-                            'Point Selector')
+                            'Point Selector',
+                            style = wx.DEFAULT_FRAME_STYLE | wx.TAB_TRAVERSAL )
 
         self.dirname=''
         self.filename=''
         self.exdirname=None
-        self.SetBackgroundColour(wx.Colour("WHITE"))
         self.SetFont(wx.Font(12 if wx.Platform == '__WXMAC__' else 11, 
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
 
