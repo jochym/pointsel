@@ -29,7 +29,7 @@ import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-version = "1.0.3"
+version = "1.0.4"
 
 rcParams['savefig.format']='tif'
 
