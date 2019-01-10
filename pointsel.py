@@ -463,13 +463,13 @@ class CanvasFrame(wx.Frame):
         box.Add(self.fixedSizeCB,0, wx.LEFT)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(wx.StaticText(self.ctrlPanel, label='W:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        hbox.Add(self.widthCtrl, 0, wx.EXPAND | wx.LEFT)
-        box.Add(hbox, 1, wx.EXPAND)
+        hbox.Add(self.widthCtrl, 0, wx.LEFT)
+        box.Add(hbox, 0, wx.TOP | wx.LEFT)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(wx.StaticText(self.ctrlPanel, label='H:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
-        hbox.Add(self.heightCtrl, 0, wx.EXPAND | wx.LEFT)
-        box.Add(hbox, 1, wx.EXPAND)
-        self.sideBar.Add(box, 1, wx.LEFT | wx.EXPAND)
+        hbox.Add(self.heightCtrl, 0, wx.LEFT)
+        box.Add(hbox, 0, wx.TOP | wx.LEFT)
+        self.sideBar.Add(box, 0, wx.LEFT)
         
         self.sideBar.AddSpacer(5)
 
@@ -513,6 +513,9 @@ class CanvasFrame(wx.Frame):
         # Auto is default
         self.aspectRB.SetSelection(0)
         self.sideBar.Add(self.aspectRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
+        
+        # Final Spacer
+        self.sideBar.AddStretchSpacer()
         
         # Set sizer inside the ctrlPanel
         self.ctrlPanel.SetSizer(self.sideBar)
