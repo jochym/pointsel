@@ -29,7 +29,7 @@ import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-version = "1.0.4"
+version = "1.0.5"
 
 rcParams['savefig.format']='tif'
 
@@ -416,65 +416,67 @@ class CanvasFrame(wx.Frame):
                                             self.figure.bbox.height))
         self.canvas.SetFocus()
 
+        # Vertical sizer for canvas and controls
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         
-        
+        # Scrolling controls panel
+        self.ctrlPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL | wx.VSCROLL)
         # Build the side bar
         self.sideBar = wx.BoxSizer(wx.VERTICAL)
-        heading = wx.StaticText(self, label='Measurements', )
+        heading = wx.StaticText(self.ctrlPanel, label='Measurements', )
         heading.SetFont(self.GetFont().MakeBold())
         self.sideBar.Add(heading, 0, wx.TOP | wx.ALIGN_CENTER) 
-        self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
+        self.sideBar.Add(wx.StaticLine(self.ctrlPanel, size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         self.sideBar.AddSpacer(3)
-        self.positionDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.positionDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.positionDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.whDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.whDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.whDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.areaDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.areaDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.areaDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.numberDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.numberDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.numberDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.concDSP = wx.StaticText(self, style=wx.ALIGN_LEFT)
+        self.concDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
         self.sideBar.Add(self.concDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
-        self.sideBar.Add(wx.StaticLine(self,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
+        self.sideBar.Add(wx.StaticLine(self.ctrlPanel,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         
         self.sideBar.AddSpacer(9)
 
-        self.titleCtrl = wx.TextCtrl(self, value='', size=(120,-1))
-        self.sideBar.Add(wx.StaticText(self,label='Title:', style=wx.ALIGN_LEFT), 0, wx.LEFT)
+        self.titleCtrl = wx.TextCtrl(self.ctrlPanel, value='', size=(120,-1))
+        self.sideBar.Add(wx.StaticText(self.ctrlPanel, label='Title:', style=wx.ALIGN_LEFT), 0, wx.LEFT)
         self.sideBar.Add(self.titleCtrl, 0, wx.EXPAND)
         
         self.sideBar.AddSpacer(5)
 
-        self.widthCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
-        self.heightCtrl = wx.SpinCtrlDouble(self, min=0, initial=0, inc=1)
+        self.widthCtrl = wx.SpinCtrlDouble(self.ctrlPanel, min=0, initial=0, inc=1)
+        self.heightCtrl = wx.SpinCtrlDouble(self.ctrlPanel, min=0, initial=0, inc=1)
         self.widthCtrl.SetDigits(2)
         self.heightCtrl.SetDigits(2)
-        self.fixedSizeCB = wx.CheckBox(self, label='Fixed size', style=wx.ALIGN_LEFT)
+        self.fixedSizeCB = wx.CheckBox(self.ctrlPanel, label='Fixed size', style=wx.ALIGN_LEFT)
 
-        box = wx.StaticBoxSizer(wx.StaticBox(self,label='Size (um):'),wx.VERTICAL)
+        box = wx.StaticBoxSizer(wx.StaticBox(self.ctrlPanel, label='Size (um):'),wx.VERTICAL)
         box.Add(self.fixedSizeCB,0, wx.LEFT)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(wx.StaticText(self,label='W:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        hbox.Add(wx.StaticText(self.ctrlPanel, label='W:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         hbox.Add(self.widthCtrl, 0, wx.EXPAND | wx.LEFT)
         box.Add(hbox, 1, wx.EXPAND)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(wx.StaticText(self,label='H:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
+        hbox.Add(wx.StaticText(self.ctrlPanel, label='H:', style=wx.ALIGN_RIGHT), 0, wx.CENTER)
         hbox.Add(self.heightCtrl, 0, wx.EXPAND | wx.LEFT)
         box.Add(hbox, 1, wx.EXPAND)
         self.sideBar.Add(box, 1, wx.LEFT | wx.EXPAND)
         
         self.sideBar.AddSpacer(5)
 
-        self.fixedNumberCB = wx.CheckBox(self, label='Fixed nr.', style=wx.ALIGN_LEFT)
-        self.numPtsCtrl = wx.SpinCtrl(self, min=0, max=1000, initial=0)
+        self.fixedNumberCB = wx.CheckBox(self.ctrlPanel, label='Fixed nr.', style=wx.ALIGN_LEFT)
+        self.numPtsCtrl = wx.SpinCtrl(self.ctrlPanel, min=0, max=1000, initial=0)
         self.numPtsCtrl.Disable()
-        box = wx.StaticBoxSizer(wx.StaticBox(self,label='# Points:'),wx.VERTICAL)
+        box = wx.StaticBoxSizer(wx.StaticBox(self.ctrlPanel, label='# Points:'),wx.VERTICAL)
         box.Add(self.fixedNumberCB,0, wx.LEFT)
         box.Add(self.numPtsCtrl, 0, wx.EXPAND)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -484,7 +486,7 @@ class CanvasFrame(wx.Frame):
         self.sideBar.AddSpacer(5)
 
         # Anchor switch
-        self.anchorRB = wx.RadioBox(self, label='Anchor:', 
+        self.anchorRB = wx.RadioBox(self.ctrlPanel, label='Anchor:', 
                                     choices=['LT','L','LB','T','C','B','RT','R','RB'],
                                     majorDimension=3,
                                     style= wx.RA_SPECIFY_ROWS)
@@ -495,22 +497,28 @@ class CanvasFrame(wx.Frame):
         
         self.sideBar.AddSpacer(9)
         # Flip buttons
-        box = wx.StaticBoxSizer(wx.StaticBox(self,label='Flip data:'),wx.HORIZONTAL)
-        self.flipXBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_x.png'))
-        self.flipYBTN=wx.BitmapButton(self,bitmap=wx.Bitmap('flip_y.png'))
-        box.Add(wx.StaticText(self,label='X:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
+        box = wx.StaticBoxSizer(wx.StaticBox(self.ctrlPanel, label='Flip data:'),wx.HORIZONTAL)
+        self.flipXBTN=wx.BitmapButton(self.ctrlPanel, bitmap=wx.Bitmap('flip_x.png'))
+        self.flipYBTN=wx.BitmapButton(self.ctrlPanel, bitmap=wx.Bitmap('flip_y.png'))
+        box.Add(wx.StaticText(self.ctrlPanel, label='X:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
         box.Add(self.flipXBTN, 0, wx.LEFT)
-        box.Add(wx.StaticText(self,label=' Y:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
+        box.Add(wx.StaticText(self.ctrlPanel, label=' Y:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
         box.Add(self.flipYBTN, 0, wx.LEFT)
         self.sideBar.Add(box, 0, wx.LEFT | wx.EXPAND)
         
         self.sideBar.AddSpacer(9)
         # Aspect ratio switch
-        self.aspectRB = wx.RadioBox(self, label='Aspect ratio:', 
+        self.aspectRB = wx.RadioBox(self.ctrlPanel, label='Aspect ratio:', 
                                     choices=['auto','equal'],)
         # Auto is default
         self.aspectRB.SetSelection(0)
         self.sideBar.Add(self.aspectRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
+        
+        # Set sizer inside the ctrlPanel
+        self.ctrlPanel.SetSizer(self.sideBar)
+        self.ctrlPanel.FitInside()
+        self.ctrlPanel.SetScrollRate(0,5)
+        
         # Build the window
         
         # Add plot canvas and sidebar
@@ -518,7 +526,7 @@ class CanvasFrame(wx.Frame):
         self.sizer.Add(cont, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         cont.Add(self.canvas, 1, wx.TOP | wx.LEFT | wx.EXPAND)
         cont.AddSpacer(3)
-        cont.Add(self.sideBar, 0, wx.TOP | wx.RIGHT )
+        cont.Add(self.ctrlPanel, 0, wx.TOP | wx.RIGHT | wx.EXPAND)
         cont.AddSpacer(3)
 
         # Add toolbar
