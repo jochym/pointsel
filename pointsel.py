@@ -11,6 +11,9 @@ from numpy import array
 import numpy as np
 from scipy.optimize import bisect
 import sys, os, math
+
+import wx
+
 import matplotlib
 
 matplotlib.use('WXAgg')
@@ -22,12 +25,10 @@ from matplotlib.backends.backend_wx import _load_bitmap, StatusBarWx
 from matplotlib.figure import Figure
 from matplotlib.widgets import RectangleSelector
 from matplotlib.patches import Rectangle
-
-from matplotlib import rcParams
-
-import wx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+
 
 version = "1.0.5"
 
