@@ -42,13 +42,13 @@ class RectSelector(RectangleSelector):
                  minspanx=None, minspany=None, useblit=True,
                  lineprops=None, rectprops=dict(facecolor='red', edgecolor = 'black',
                            alpha=0.5, fill=True), proxy=5):
-        RectangleSelector.__init__(self, ax=ax, onselect=onselect, 
+        RectangleSelector.__init__(self, ax=ax, onselect=onselect,
                         drawtype='box', spancoords='data',
-                        minspanx=minspanx, minspany=minspany, 
-                        useblit=useblit, 
-                        lineprops=lineprops, rectprops=rectprops, 
+                        minspanx=minspanx, minspany=minspany,
+                        useblit=useblit,
+                        lineprops=lineprops, rectprops=rectprops,
                         button=button)
-                        
+
         self.fixedSize=None
         self.prevEvents=None
         self.proxy=max(self.ax.transData.transform_point((proxy/100, proxy/100))-
@@ -77,7 +77,7 @@ class RectSelector(RectangleSelector):
                 else : return 4
         else :
             return 0
-    
+
     def getLTRB(self):
         pe, re=self.prevEvents
         l, r=min(pe.xdata,re.xdata), max(pe.xdata,re.xdata)
@@ -88,7 +88,7 @@ class RectSelector(RectangleSelector):
         l,t,r,b=self.getLTRB()
         cl=[[r,t],[r,b],[l,b],[l,t]]
         return cl[pos-1]
-        
+
     def setSize(self, w=None, h=None):
         if w is not None and h is not None:
             self.fixedSize=(w,h)
@@ -112,7 +112,7 @@ class RectSelector(RectangleSelector):
             return
         h=self.close_to_handles(ev)
         if not self.fixedSize and self.prevEvents and h :
-            # Not fixed size and active roi. 
+            # Not fixed size and active roi.
             # Clicked on the corner -> modify mode
             x,y=self.opposite_corner(h)
             self.to_draw.set_visible(self.visible)
@@ -123,7 +123,7 @@ class RectSelector(RectangleSelector):
         else :
             RectangleSelector.press(self,ev)
 
-        
+
     def release(self, ev):
         if self.eventpress is None or self.ignore(ev):
             return
@@ -150,10 +150,10 @@ class RectSelector(RectangleSelector):
             self.eventpress.xdata=ev.xdata-2*self.wdata
             self.eventpress.ydata=ev.ydata-2*self.hdata
         RectangleSelector.onmove(self, ev)
-            
 
-class CustomToolbar(NavToolbar): 
-    
+
+class CustomToolbar(NavToolbar):
+
     toolitems=NavToolbar.toolitems + (
         (None, None, None, None),
         ('ROI', 'Select ROI', 'selection', '_on_custom_select'),
@@ -162,7 +162,7 @@ class CustomToolbar(NavToolbar):
     def __init__(self, plotCanvas):
         # create the default toolbar
         NavToolbar.__init__(self, plotCanvas)
-        self.selector = RectSelector(self.canvas.figure.axes[0], 
+        self.selector = RectSelector(self.canvas.figure.axes[0],
                             self.onSelect, button=[1,3], # don't use middle button
                              minspanx=5, minspany=5)
         self.selector.set_active(True)
@@ -170,7 +170,7 @@ class CustomToolbar(NavToolbar):
         self.roi=None
         self.fixedSize=False
         if wx.Platform == '__WXMAC__' :
-            self.to_draw = Rectangle((0, 0), 0, 1, visible=False, 
+            self.to_draw = Rectangle((0, 0), 0, 1, visible=False,
                                 facecolor='yellow', edgecolor = 'black',
                                 alpha=0.5, fill=True)
             self.ax.add_patch(self.to_draw)
@@ -261,7 +261,7 @@ class CustomToolbar(NavToolbar):
 #        for id in ['Zoom','Pan']:
 #            self.ToggleTool(self.wx_ids[id], False)
 #        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
-#        self.ToggleTool(self.wx_ids['ROI'], 
+#        self.ToggleTool(self.wx_ids['ROI'],
 #                self.GetToolState(self.wx_ids['ROI']) )
         self.toggle_selector()
 #        print('Select ROI: %s' % (self.GetToolState(self.wx_ids['ROI'])))
@@ -285,7 +285,7 @@ class CustomToolbar(NavToolbar):
         if self.roi is None :
             #print('upd ROI:', x, y, w, h)
             self.roi=Rectangle((x,y),w,h,
-                                ls='solid', lw=2, color='r', fill=False, 
+                                ls='solid', lw=2, color='r', fill=False,
                                 zorder=5)
             self.canvas.figure.axes[0].add_patch(self.roi)
         else :
@@ -298,7 +298,7 @@ class CustomToolbar(NavToolbar):
     def onFixedSize(self, ev):
         self.fixedSize=ev.IsChecked()
         self.updateCanvas()
-        
+
     def onWidthChange(self, ev):
         if self.roi :
             x=self.roi.get_x()
@@ -324,7 +324,7 @@ class CustomToolbar(NavToolbar):
             self.roi.set_y(y+dh)
             self.roi.set_height(nh)
             self.updateCanvas()
-        
+
     def updateCanvas(self, redraw=True):
         if self.roi :
             self.canvas.parentFrame.showROI(self.roi.get_x(),
@@ -365,24 +365,24 @@ class CanvasFrame(wx.Frame):
         self.dirname=''
         self.filename=''
         self.exdirname=None
-        self.SetFont(wx.Font(12 if wx.Platform == '__WXMAC__' else 11, 
+        self.SetFont(wx.Font(12 if wx.Platform == '__WXMAC__' else 11,
                                 wx.FONTFAMILY_TELETYPE, wx.NORMAL, wx.NORMAL))
 
 
         # Setting up the menu.
         filemenu= wx.Menu()
-        menuOpen = filemenu.Append(wx.ID_OPEN, 
+        menuOpen = filemenu.Append(wx.ID_OPEN,
                     "&Open\tCTRL+O"," Open a data file")
-        menuExport = filemenu.Append(wx.ID_SAVE, 
+        menuExport = filemenu.Append(wx.ID_SAVE,
                     "&Export selection\tCTRL+E"," Export selected data to a file.")
-        menuAbout= filemenu.Append(wx.ID_ABOUT, 
+        menuAbout= filemenu.Append(wx.ID_ABOUT,
                     "About"," Information about this program")
         menuExit = filemenu.Append(wx.ID_EXIT,
                     "E&xit\tCTRL+X"," Terminate the program")
 
         # Creating the menubar.
         menuBar = wx.MenuBar()
-        menuBar.Append(filemenu,"&File") 
+        menuBar.Append(filemenu,"&File")
 
         # Adding the "filemenu" to the MenuBar
         self.SetMenuBar(menuBar)  # Adding the MenuBar to the Frame content.
@@ -401,32 +401,32 @@ class CanvasFrame(wx.Frame):
         self.figure.set_tight_layout(True)
         self.axes = self.figure.add_subplot(111)
 
-        
+
         self.datfn=''
         self.dat=[['',''],array([[],[]])]
         self.dirname, self.filename= os.path.split(self.datfn)
 
         self.plot,=self.axes.plot([],[],',')
         self.axes.grid(color='k', alpha=0.75, lw=1, ls='-')
-        
+
         self.statbar = StatusBar(self)
         self.SetStatusBar(self.statbar)
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.parentFrame=self
-        self.canvas.SetInitialSize(wx.Size(self.figure.bbox.width, 
+        self.canvas.SetInitialSize(wx.Size(self.figure.bbox.width,
                                             self.figure.bbox.height))
         self.canvas.SetFocus()
 
         # Vertical sizer for canvas and controls
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        
+
         # Scrolling controls panel
         self.ctrlPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL | wx.VSCROLL)
         # Build the side bar
         self.sideBar = wx.BoxSizer(wx.VERTICAL)
         heading = wx.StaticText(self.ctrlPanel, label='Measurements', )
         heading.SetFont(self.GetFont().MakeBold())
-        self.sideBar.Add(heading, 0, wx.TOP | wx.ALIGN_CENTER) 
+        self.sideBar.Add(heading, 0, wx.TOP | wx.ALIGN_CENTER)
         self.sideBar.Add(wx.StaticLine(self.ctrlPanel, size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
         self.sideBar.AddSpacer(3)
         self.positionDSP = wx.StaticText(self.ctrlPanel, style=wx.ALIGN_LEFT)
@@ -445,13 +445,13 @@ class CanvasFrame(wx.Frame):
         self.sideBar.Add(self.concDSP, 0, wx.BOTTOM | wx.LEFT)
         self.sideBar.AddSpacer(3)
         self.sideBar.Add(wx.StaticLine(self.ctrlPanel,size=(100,-1)), 0, wx.BOTTOM | wx.CENTER)
-        
+
         self.sideBar.AddSpacer(9)
 
         self.titleCtrl = wx.TextCtrl(self.ctrlPanel, value='', size=(120,-1))
         self.sideBar.Add(wx.StaticText(self.ctrlPanel, label='Title:', style=wx.ALIGN_LEFT), 0, wx.LEFT)
         self.sideBar.Add(self.titleCtrl, 0, wx.EXPAND)
-        
+
         self.sideBar.AddSpacer(5)
 
         self.widthCtrl = wx.SpinCtrlDouble(self.ctrlPanel, min=0, initial=0, inc=1)
@@ -471,7 +471,7 @@ class CanvasFrame(wx.Frame):
         hbox.Add(self.heightCtrl, 0, wx.LEFT)
         box.Add(hbox, 0, wx.TOP | wx.LEFT)
         self.sideBar.Add(box, 0, wx.LEFT)
-        
+
         self.sideBar.AddSpacer(5)
 
         self.fixedNumberCB = wx.CheckBox(self.ctrlPanel, label='Fixed nr.', style=wx.ALIGN_LEFT)
@@ -487,7 +487,7 @@ class CanvasFrame(wx.Frame):
         self.sideBar.AddSpacer(5)
 
         # Anchor switch
-        self.anchorRB = wx.RadioBox(self.ctrlPanel, label='Anchor:', 
+        self.anchorRB = wx.RadioBox(self.ctrlPanel, label='Anchor:',
                                     choices=['LT','L','LB','T','C','B','RT','R','RB'],
                                     majorDimension=3,
                                     style= wx.RA_SPECIFY_ROWS)
@@ -495,7 +495,7 @@ class CanvasFrame(wx.Frame):
         self.anchorRB.SetSelection(4)
         for i in [1,3,5,7] : self.anchorRB.ShowItem(i,False)
         self.sideBar.Add(self.anchorRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
-        
+
         self.sideBar.AddSpacer(9)
         # Flip buttons
         box = wx.StaticBoxSizer(wx.StaticBox(self.ctrlPanel, label='Flip data:'),wx.HORIZONTAL)
@@ -506,25 +506,25 @@ class CanvasFrame(wx.Frame):
         box.Add(wx.StaticText(self.ctrlPanel, label=' Y:', style=wx.ALIGN_LEFT), 0, wx.CENTER )
         box.Add(self.flipYBTN, 0, wx.LEFT)
         self.sideBar.Add(box, 0, wx.LEFT | wx.EXPAND)
-        
+
         self.sideBar.AddSpacer(9)
         # Aspect ratio switch
-        self.aspectRB = wx.RadioBox(self.ctrlPanel, label='Aspect ratio:', 
+        self.aspectRB = wx.RadioBox(self.ctrlPanel, label='Aspect ratio:',
                                     choices=['auto','equal'],)
         # Auto is default
         self.aspectRB.SetSelection(0)
         self.sideBar.Add(self.aspectRB, 0, wx.BOTTOM | wx.LEFT | wx.EXPAND)
-        
+
         # Final Spacer
         self.sideBar.AddStretchSpacer()
-        
+
         # Set sizer inside the ctrlPanel
         self.ctrlPanel.SetSizer(self.sideBar)
         self.ctrlPanel.FitInside()
         self.ctrlPanel.SetScrollRate(0,5)
-        
+
         # Build the window
-        
+
         # Add plot canvas and sidebar
         cont=wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(cont, 1, wx.TOP | wx.LEFT | wx.EXPAND)
@@ -535,7 +535,7 @@ class CanvasFrame(wx.Frame):
 
         # Add toolbar
         self.toolbar=self._get_toolbar(self.statbar)
-        
+
         # Bind the methods to the GUI elements
         self.fixedSizeCB.Bind(wx.EVT_CHECKBOX, self.toolbar.onFixedSize)
         self.widthCtrl.Bind(wx.EVT_SPINCTRLDOUBLE, self.onWidthChange)
@@ -547,7 +547,7 @@ class CanvasFrame(wx.Frame):
         self.flipXBTN.Bind(wx.EVT_BUTTON, self.onFlipX)
         self.flipYBTN.Bind(wx.EVT_BUTTON, self.onFlipY)
         self.aspectRB.Bind(wx.EVT_RADIOBOX, self.onAspectChange)
-        
+
         if self.toolbar is not None:
             self.toolbar.Realize()
             # Default window size is incorrect, so set
@@ -580,7 +580,7 @@ class CanvasFrame(wx.Frame):
         except IOError :
             if self.datfn!='' :
                 print('Warning: Cannot open file ', self.datfn)
-        
+
         self.titleCtrl.SetValue(self.filename)
         self.redrawPlot()
 
@@ -600,7 +600,7 @@ class CanvasFrame(wx.Frame):
     def readData(self, fn, skip=1):
         '''
         Read and translate the data from the file named fn.
-        The data is returned as an array of rows x cols 
+        The data is returned as an array of rows x cols
         in the second member of the returned list.
         The first skip (default 1) line are skipped.
         If the skip is >0 the contents of this line is returned
@@ -615,7 +615,7 @@ class CanvasFrame(wx.Frame):
             lbl=df[0].replace('#','').strip().split(';')
         else :
             lbl=None
-        r = [lbl, array([[float(v) 
+        r = [lbl, array([[float(v)
                             for v in  ln.replace(';',' ').replace(',','.').split()]
                                 for ln in df[skip:] if ln[0]!='#' and ln.split()]).T]
         d=r[1]
@@ -648,10 +648,10 @@ class CanvasFrame(wx.Frame):
             w = self.toolbar.roi.get_width()
             h = self.toolbar.roi.get_height()
             hdr += '\n'
-            hdr += (' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d   Concentration=%g' 
+            hdr += (' ROI (um): X=%.2f  Y=%.2f  W=%.2f  H=%.2f    Points=%d   Concentration=%g'
                         % (x, y, w,h, sel.shape[1],sum(sel[2])/(w*h)) )
         except AttributeError :
-            # No roi 
+            # No roi
             pass
         if sel is None :
             wx.MessageBox('Nothing to save yet. Make some selection before trying to export data.',
@@ -661,7 +661,7 @@ class CanvasFrame(wx.Frame):
             # Shift exported data to the origin
             d[0]-=min(d[0])
             d[1]-=min(d[1])
-            np.savetxt(fn, d.T, fmt='%11.3f', delimiter=' ', newline='\n', 
+            np.savetxt(fn, d.T, fmt='%11.3f', delimiter=' ', newline='\n',
                 header=hdr, footer='', comments='#')
 
 
@@ -669,10 +669,10 @@ class CanvasFrame(wx.Frame):
         self.widthCtrl.SetMax(self.maxX-self.minX)
         self.heightCtrl.SetMax(self.maxY-self.minY)
         self.numPtsCtrl.SetRange(0,self.numPoints)
-    
+
     def showArea(self, a=0):
         self.areaDSP.SetLabel('Area (um^2):  \n %-8g' % (a))
-    
+
     def showLTRB(self, l=0, t=0, r=0, b=0):
         self.positionDSP.SetLabel(u'Position (um):  \n L: %-8g\n T: %-8g\n R: %-8g\n B: %-8g' % (l,t,r,b))
 
@@ -681,10 +681,10 @@ class CanvasFrame(wx.Frame):
 
     def showNumber(self, n=0):
         self.numberDSP.SetLabel('Selected pnts: \n %-d' % (n))
-    
+
     def showConc(self, g=0):
         self.concDSP.SetLabel('Concentration: \n %.3f' % (g))
-    
+
     def showROI(self, x, y, w, h):
         self.showLTRB(l=x,t=y+h,r=x+w,b=y)
         self.showArea(w*h)
@@ -739,8 +739,8 @@ class CanvasFrame(wx.Frame):
 
     def onAbout(self,e):
         # Create a message dialog box
-        dlg = wx.MessageDialog(self, 
-                                "ROI selector\nVersion %s" % (version), 
+        dlg = wx.MessageDialog(self,
+                                "ROI selector\nVersion %s" % (version),
                                 "About PointSel", wx.OK)
         dlg.ShowModal() # Shows it
         dlg.Destroy() # finally destroy it when finished.
@@ -765,10 +765,10 @@ class CanvasFrame(wx.Frame):
                 self.toolbar.push_current()
                 self.redrawPlot()
             except (IOError, IndexError, ValueError) as ex :
-                wx.MessageBox('The data from:\n\n' 
-                              + self.datfn 
+                wx.MessageBox('The data from:\n\n'
+                              + self.datfn
                               + '\n\ncould not be read properly.'
-                              + '\nProbably the format is incorrect.', 
+                              + '\nProbably the format is incorrect.',
                               'Error reading data')
         dlg.Destroy()
 
@@ -779,10 +779,10 @@ class CanvasFrame(wx.Frame):
         '''Export the selected points'''
         if self.exdirname is None :
             self.exdirname = self.dirname
-        dlg = wx.FileDialog(self, "Choose a file", self.exdirname, "*.txt", 
+        dlg = wx.FileDialog(self, "Choose a file", self.exdirname, "*.txt",
                                 "Data file (*.txt)|*.txt|"+
                                 "Data file (*.dat)|*.dat|"+
-                                "All files (*.*)|*.*", 
+                                "All files (*.*)|*.*",
                                 wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
         if dlg.ShowModal() == wx.ID_OK:
             # The file name is local here.
@@ -795,7 +795,7 @@ class CanvasFrame(wx.Frame):
     def onFixedSize(self, ev):
         if self.toolbar :
             self.toolbar.onFixedSize(ev)
-    
+
     def onFixedNumber(self, ev):
         if self.fixedNumberCB.IsChecked() :
             if self.toolbar.roi is None :
@@ -811,13 +811,13 @@ class CanvasFrame(wx.Frame):
             self.handleROIforN()
         else :
             self.numPtsCtrl.Disable()
-            
+
     def updateROI(self, x, y, w, h):
         self.showArea(w*h)
         self.showLTRB(l=x,t=y+h,r=x+w,b=y)
         self.toolbar.updateROI(x,y,w,h)
         self.redrawPlot()
-    
+
     def onWidthChange(self, ev):
         if self.toolbar :
             self.toolbar.onWidthChange(ev)
@@ -894,11 +894,11 @@ class CanvasFrame(wx.Frame):
 
     def findROIforN(self, x, y, w, h, n, fp='C'):
         '''
-        Find the squere ROI around target point (cx, cy) containing 
-        as close as possible to target number of points (n). 
+        Find the squere ROI around target point (cx, cy) containing
+        as close as possible to target number of points (n).
         The function does not care about the GUI. Just the computation.
         '''
-        
+
         def optfunC(w, x, y, d):
             hw=w/2
             l=x-hw
@@ -906,7 +906,7 @@ class CanvasFrame(wx.Frame):
             r=x+hw
             t=y+hw
             return n-np.count_nonzero((l<d[0]) & (d[0]<r) & (b<d[1]) & (d[1]<t))
-            
+
         def optfunLB(w, x, y, d):
             l=x
             b=y
@@ -962,14 +962,14 @@ class CanvasFrame(wx.Frame):
         cx=max(cx,self.minX)
         cy=min(cy,self.maxY)
         cy=max(cy,self.minY)
-        
+
         try :
             nw=bisect(optfun[fp], minW, maxW, args=(cx,cy, d), xtol=10e-12)
         except ValueError :
-            #wx.MessageBox('Cannot find a good solution for the selection box. ', 
+            #wx.MessageBox('Cannot find a good solution for the selection box. ',
             #                'Solver error!')
             return x, y, math.sqrt(w*h)
-        
+
         if fp=='C' :
             cx-=nw/2 ; cy-=nw/2
         elif fp=='LB' :
@@ -979,7 +979,7 @@ class CanvasFrame(wx.Frame):
         elif fp=='RT' :
             cx-=nw ; cy-=nw
         elif fp=='RB' :
-            cx-=nw 
+            cx-=nw
         else :
             print('This should not happen! Inform the author')
         return cx, cy, nw
@@ -1002,4 +1002,3 @@ if __name__ == '__main__':
 
     app = App(False)
     app.MainLoop()
-
