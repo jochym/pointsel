@@ -145,10 +145,12 @@ class RectSelector(RectangleSelector):
             return
         if self.fixedSize and self.prevEvents :
             # Panning mode. Modify the existing ROI. Do the shift.
+            self.eventpress.xdata=ev.xdata
+            self.eventpress.ydata=ev.ydata
             ev.xdata+=self.wdata
             ev.ydata+=self.hdata
-            self.eventpress.xdata=ev.xdata-2*self.wdata
-            self.eventpress.ydata=ev.ydata-2*self.hdata
+            #self.eventpress.xdata=ev.xdata-2*self.wdata
+            #self.eventpress.ydata=ev.ydata-2*self.hdata
         RectangleSelector.onmove(self, ev)
 
 
@@ -758,7 +760,9 @@ class CanvasFrame(wx.Frame):
             try :
                 self.dat=self.readData(self.datfn)
                 self.displayData(self.dat[1],self.dat[0])
-                self.updateROI(0,0,self.maxX,self.maxY)
+                w, h = self.maxX/20, self.maxY/20
+                self.updateROI(self.maxX/2, self.maxY/2,
+                               self.maxX/20, self.maxY/20)
                 self.axes.set_xlim(0,self.maxX)
                 self.axes.set_ylim(0,self.maxY)
                 self.toolbar.update()
