@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
-version = "1.0.7"
+version = "1.0.8"
 
 rcParams['savefig.format']='tif'
 
@@ -111,7 +111,7 @@ class RectSelector(RectangleSelector):
         if self.ignore(ev):
             return
         h=self.close_to_handles(ev)
-        if not self.fixedSize and self.prevEvents and h :
+        if not self.fixedSize and h :
             # Not fixed size and active roi.
             # Clicked on the corner -> modify mode
             x,y=self.opposite_corner(h)
@@ -186,7 +186,7 @@ class CustomToolbar(NavToolbar):
             if text is None:
                 self.AddSeparator()
                 continue
-            self.wx_ids[text] = wx.NewId()
+            self.wx_ids[text] = wx.NewIdRef()
             try :
                 bitmap=_load_bitmap(image_file + '.png')
             except IOError :
