@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
-version = "1.0.6"
+version = "1.0.7"
 
 rcParams['savefig.format']='tif'
 
@@ -129,10 +129,12 @@ class RectSelector(RectangleSelector):
             return
         if self.fixedSize and self.prevEvents:
             # Panning mode. Modify the existing ROI. Do the shift.
+            self.eventpress.xdata=ev.xdata
+            self.eventpress.ydata=ev.ydata
             ev.xdata+=self.wdata
             ev.ydata+=self.hdata
-            self.eventpress.xdata=ev.xdata-2*self.wdata
-            self.eventpress.ydata=ev.ydata-2*self.hdata
+            #self.eventpress.xdata=ev.xdata-2*self.wdata
+            #self.eventpress.ydata=ev.ydata-2*self.hdata
 
         self.prevEvents=(self.eventpress,ev)
         pe, re=self.prevEvents
@@ -143,7 +145,7 @@ class RectSelector(RectangleSelector):
     def onmove(self, ev):
         if self.eventpress is None or self.ignore(ev):
             return
-        if self.fixedSize and self.prevEvents :
+        if self.fixedSize:
             # Panning mode. Modify the existing ROI. Do the shift.
             self.eventpress.xdata=ev.xdata
             self.eventpress.ydata=ev.ydata
