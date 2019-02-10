@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
-version = "1.0.5"
+version = "1.0.6"
 
 rcParams['savefig.format']='tif'
 
@@ -149,8 +149,6 @@ class RectSelector(RectangleSelector):
             self.eventpress.ydata=ev.ydata
             ev.xdata+=self.wdata
             ev.ydata+=self.hdata
-            #self.eventpress.xdata=ev.xdata-2*self.wdata
-            #self.eventpress.ydata=ev.ydata-2*self.hdata
         RectangleSelector.onmove(self, ev)
 
 
